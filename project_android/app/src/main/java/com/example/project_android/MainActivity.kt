@@ -7,6 +7,7 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
+import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 
@@ -17,7 +18,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         val loginHintText = findViewById<TextView>(R.id.login_hint)
-        val mainLayout=findViewById<LinearLayout>(R.id.main_layout)
+        val mainLayout=findViewById<ConstraintLayout>(R.id.main_layout)
         val animator = ObjectAnimator.ofFloat(loginHintText, "alpha", 1f, 0f)
         animator.duration = 1000
         animator.repeatCount = ObjectAnimator.INFINITE
@@ -26,7 +27,7 @@ class MainActivity : AppCompatActivity() {
 
 
         mainLayout.setOnClickListener {
-            val intent = Intent(this, PlanningActivity::class.java)
+            val intent = Intent(this, LoginActivity::class.java)
             startActivity(intent)
         }
     }

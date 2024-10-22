@@ -1,0 +1,43 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <EditText
+        android:id="@+id/schedule_name"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="行程表名稱" />
+
+    <Button
+        android:id="@+id/start_date_button"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="選擇開始日期"
+        android:layout_marginTop="16dp" />
+
+    <TextView
+        android:id="@+id/start_date_button_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="未選擇"
+        android:textSize="16sp"
+        android:layout_marginTop="8dp" />
+
+    <Button
+        android:id="@+id/end_date_button"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="選擇結束日期"
+        android:layout_marginTop="16dp" />
+
+    <TextView
+        android:id="@+id/end_date_button_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="未選擇"
+        android:textSize="16sp"
+        android:layout_marginTop="8dp" />
+
+</LinearLayout>

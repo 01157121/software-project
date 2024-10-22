@@ -1,27 +1,32 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/main_layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:gravity="center"
-    android:background="#05e3d4"
-    android:padding="16dp">
+    android:background="#60abab"
+    android:padding="106dp">
 
+    <!-- 主標題 -->
     <TextView
         android:id="@+id/title_text"
-        android:layout_width="263dp"
-        android:layout_height="141dp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
         android:fontFamily="sans-serif"
         android:gravity="center"
         android:text="旅遊"
         android:textColor="#FFFFFF"
         android:textSize="88sp"
         android:textStyle="bold"
-        tools:layout_editor_absoluteX="50dp"
-        tools:layout_editor_absoluteY="201dp" />
+        android:layout_marginTop="-150dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintVertical_bias="0.5" />
 
+    <!-- 副標題 -->
     <TextView
         android:id="@+id/subtitle_text"
         android:layout_width="wrap_content"
@@ -31,9 +36,12 @@
         android:text="要規劃"
         android:textColor="#FFFFFF"
         android:textSize="42sp"
-        tools:layout_editor_absoluteX="118dp"
-        tools:layout_editor_absoluteY="335dp" />
+        app:layout_constraintTop_toBottomOf="@+id/title_text"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintVertical_bias="0.1" />
 
+    <!-- 登入提示 -->
     <TextView
         android:id="@+id/login_hint"
         android:layout_width="wrap_content"
@@ -43,7 +51,10 @@
         android:text="點選畫面登入系統"
         android:textColor="#FFFFFF"
         android:textSize="24sp"
-        tools:layout_editor_absoluteX="91dp"
-        tools:layout_editor_absoluteY="563dp" />
+        app:layout_constraintTop_toBottomOf="@+id/subtitle_text"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintVertical_bias="0.7" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
