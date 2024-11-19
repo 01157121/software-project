@@ -25,7 +25,8 @@ class PlanningActivity : AppCompatActivity() {
         val scheduleName = intent.getStringExtra("SCHEDULE_NAME")
         val startDateStr = intent.getStringExtra("START_DATE")
         val endDateStr = intent.getStringExtra("END_DATE")
-
+        val Members = intent.getStringArrayListExtra("MEMBERS_LIST")
+        val validMembers: ArrayList<String> = ArrayList(Members!!.filterNotNull())
         // 設定 UI 元素
         scheduleNameTextView = findViewById(R.id.schedule_name_text)
         dateRangeTextView = findViewById(R.id.date_range_text)
@@ -44,7 +45,7 @@ class PlanningActivity : AppCompatActivity() {
             dateRangeTextView.text = "${dateFormat.format(startDate)} - ${dateFormat.format(endDate)}"
 
             // 設定 ViewPager2
-            val adapter = SchedulePagerAdapter(this, dateList)
+            val adapter = SchedulePagerAdapter(this, dateList, validMembers)
             viewPager.adapter = adapter
 
         } catch (e: ParseException) {

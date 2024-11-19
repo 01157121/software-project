@@ -6,9 +6,12 @@ import android.content.Intent
 import android.os.Bundle
 import android.view.MenuItem
 import android.view.View
+import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.EditText
+import android.widget.Spinner
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.ActionBarDrawerToggle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.GravityCompat
@@ -95,6 +98,15 @@ class LobbyActivity : AppCompatActivity() {
         val dialogView = layoutInflater.inflate(R.layout.dialog_create_schedule, null)
         val startDateButton: View = dialogView.findViewById(R.id.start_date_button)
         val endDateButton: View = dialogView.findViewById(R.id.end_date_button)
+        val AddNewMenberButton: View = dialogView.findViewById(R.id.AddNewMenber) //新增成員按鈕
+        // 初始化 Spinner 的邏輯
+        val memberSpinner = dialogView.findViewById<Spinner>(R.id.member_spinner)
+        // 預設成員列表
+        val memberList = mutableListOf("")
+        // Adapter 設定
+        val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, memberList)
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        memberSpinner.adapter = adapter
 
         startDateButton.setOnClickListener {
             showDatePickerDialog { selectedDate ->
@@ -112,6 +124,22 @@ class LobbyActivity : AppCompatActivity() {
                 }
             }
         }
+        //讓新增成員按鈕
+        AddNewMenberButton.setOnClickListener {
+            showAddMemberDialog { memberName ->
+                // 處理新增的成員名稱（例如，保存到列表或顯示）
+                // 同時更新下拉式選單
+                if (memberList.contains(memberName)) {
+                    Toast.makeText(this, "該成員已存在，無法重複新增", Toast.LENGTH_SHORT).show()
+                } else {
+                    // 新增成員到列表並更新 Adapter
+                    memberList.add(memberName)
+                    adapter.notifyDataSetChanged()
+                    Toast.makeText(this, "新增成員：$memberName", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+
         val dialog = androidx.appcompat.app.AlertDialog.Builder(this)
             .setTitle("創建行程表")
             .setView(dialogView)
@@ -119,11 +147,12 @@ class LobbyActivity : AppCompatActivity() {
                 val scheduleName = dialogView.findViewById<EditText>(R.id.schedule_name).text.toString()
                 val startDate = dialogView.findViewById<TextView>(R.id.start_date_button_text).text.toString()
                 val endDate = dialogView.findViewById<TextView>(R.id.end_date_button_text).text.toString()
-
+                val members = memberList.toList()
                 val intent = Intent(this, PlanningActivity::class.java)
                 intent.putExtra("SCHEDULE_NAME", scheduleName)
                 intent.putExtra("START_DATE", startDate)
                 intent.putExtra("END_DATE", endDate)
+                intent.putStringArrayListExtra("MEMBERS_LIST", ArrayList(members))
                 startActivity(intent)
             }
             .setNegativeButton("取消", null)
@@ -155,5 +184,25 @@ class LobbyActivity : AppCompatActivity() {
         }, year, month, day)
 
         datePickerDialog.show()
+    }
+    //fun 來跳出新增成員的dialog
+    private fun showAddMemberDialog(onMemberAdded: (String) -> Unit) {
+        val dialogView = layoutInflater.inflate(R.layout.dialog_add_member, null)
+        val memberNameEditText = dialogView.findViewById<EditText>(R.id.member_name_edit_text)
+
+        val dialog = androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle("新增成員")
+            .setView(dialogView)
+            .setPositiveButton("確認") { _, _ ->
+                val memberName = memberNameEditText.text.toString()
+                if (memberName.isNotBlank()) {
+                    onMemberAdded(memberName)
+                } else {
+                    Toast.makeText(this, "請輸入有效的名字", Toast.LENGTH_SHORT).show()
+                }
+            }
+            .setNegativeButton("取消", null)
+            .create()
+        dialog.show()
     }
 }

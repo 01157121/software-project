@@ -39,5 +39,26 @@
         android:text="未選擇"
         android:textSize="16sp"
         android:layout_marginTop="8dp" />
-
+    <!-- 新增參與成員按鈕 -->
+    <Button
+        android:id="@+id/AddNewMenber"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="新增參與人員"
+        android:layout_marginTop="16dp" />
+    <!-- 顯示成員提示文字 -->
+    <TextView
+        android:id="@+id/ShowMember"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="顯示成員"
+        android:textSize="16sp"
+        android:layout_marginTop="8dp" />
+    <!-- 顯示成員的下拉式選單 -->
+    <Spinner
+        android:id="@+id/member_spinner"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:spinnerMode="dropdown" />
 </LinearLayout>
