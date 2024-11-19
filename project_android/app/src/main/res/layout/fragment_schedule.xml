@@ -28,4 +28,11 @@
         </TableLayout>
 
     </ScrollView>
+
+    <TextView
+        android:id="@+id/test_text"
+        android:layout_width="192dp"
+        android:layout_height="40dp"
+        android:textSize="20sp"
+        android:textStyle="bold" />
 </LinearLayout>

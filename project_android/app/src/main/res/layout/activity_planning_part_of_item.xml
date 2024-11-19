@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <!-- 行程名稱 -->
+    <TextView
+        android:id="@+id/plan_name_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="行程名稱"
+        android:textSize="18sp"
+        android:textStyle="bold" />
+
+    <!-- 日期 -->
+    <TextView
+        android:id="@+id/date_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="日期" />
+
+    <!-- 時間範圍 -->
+    <TextView
+        android:id="@+id/time_range_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="時間範圍" />
+
+</LinearLayout>
