@@ -112,6 +112,7 @@ class LobbyActivity : AppCompatActivity() {
                 }
             }
         }
+
         val dialog = androidx.appcompat.app.AlertDialog.Builder(this)
             .setTitle("創建行程表")
             .setView(dialogView)
