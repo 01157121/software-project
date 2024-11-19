@@ -6,7 +6,7 @@ import androidx.fragment.app.FragmentActivity
 import androidx.viewpager2.adapter.FragmentStateAdapter
 import java.util.*
 
-class SchedulePagerAdapter(fragmentActivity: FragmentActivity, private val dateList: List<Date>) : FragmentStateAdapter(fragmentActivity) {
+class SchedulePagerAdapter(fragmentActivity: FragmentActivity, private val dateList: List<Date>, private  val MemberList: ArrayList<String>) : FragmentStateAdapter(fragmentActivity) {
 
     override fun getItemCount(): Int {
         return dateList.size
@@ -14,6 +14,7 @@ class SchedulePagerAdapter(fragmentActivity: FragmentActivity, private val dateL
 
     override fun createFragment(position: Int): Fragment {
         val date = dateList[position]
-        return ScheduleFragment.newInstance(date)
+        val MemberList = MemberList
+        return ScheduleFragment.newInstance(date,MemberList)
     }
 }
