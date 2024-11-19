@@ -1,0 +1,99 @@
+@startuml
+class com.example.project_android.SchedulePagerAdapter {
++ Int getItemCount()
++ Fragment createFragment(Int)
+}
+
+class com.example.project_android.ModuleAdapter$ModuleViewHolder {
++ TextView moduleName
+}
+
+class com.example.project_android.ModuleAdapter {
++ ModuleViewHolder onCreateViewHolder(ViewGroup,Int)
++ void onBindViewHolder(ModuleViewHolder,Int)
++ Int getItemCount()
+}
+
+class com.example.project_android.Module {
+}
+class com.example.project_android.ExampleUnitTest {
++ void addition_isCorrect()
+}
+
+class com.example.project_android.LoginActivity$Companion {
+-  RC_SIGN_IN
+}
+
+class com.example.project_android.LoginActivity {
+- GoogleSignInClient googleSignInClient
+- FirebaseAuth firebaseAuth
+- FirebaseAuth auth
++ void onCreate(Bundle?)
+- void signInWithGoogle()
++ void onActivityResult(Int,Int,Intent?)
+- void firebaseAuthWithGoogle(GoogleSignInAccount?)
+}
+
+
+class com.example.project_android.PlanningActivity {
+- ViewPager2 viewPager
+- TextView scheduleNameTextView
+- TextView dateRangeTextView
+- MutableList<Date> dateList
++ void onCreate(Bundle?)
+- void generateDateRange(Date?,Date?)
+}
+
+
+class com.example.project_android.ExampleInstrumentedTest {
++ void useAppContext()
+}
+
+class com.example.project_android.MainActivity {
++ void onCreate(Bundle?)
+}
+
+class com.example.project_android.ScheduleFragment$Companion {
+-  ARG_DATE
++ ScheduleFragment newInstance(Date)
+}
+
+
+class com.example.project_android.ScheduleFragment {
++ void onCreateView(void,LayoutInflater,ViewGroup?,void,Bundle?)
++ void null()
++ void onViewCreated(View,Bundle?)
+- void displayDate(Date,View)
+- void generateScheduleTable(TableLayout)
+}
+
+class com.example.project_android.LobbyActivity {
+- DrawerLayout drawerLayout
+- ActionBarDrawerToggle toggle
+- RecyclerView recyclerView
+- FloatingActionButton addButton
+- Button startDateButton
+- Button endDateButton
++ void onCreate(Bundle?)
++ void openDrawer(View)
++ Boolean onOptionsItemSelected(MenuItem)
+- List<Module> getModuleList()
+- void showCreateScheduleDialog()
+- void showDatePickerDialog((String) -> Unit)
+}
+
+
+
+
+androidx.viewpager2.adapter.FragmentStateAdapter <|-- com.example.project_android.SchedulePagerAdapter
+com.example.project_android.ModuleAdapter +.. com.example.project_android.ModuleAdapter$ModuleViewHolder
+com.example.project_android.ViewHolder <|-- com.example.project_android.ModuleAdapter$ModuleViewHolder
+com.example.project_android.Adapter <|-- com.example.project_android.ModuleAdapter
+com.example.project_android.LoginActivity +.. com.example.project_android.LoginActivity$Companion
+androidx.appcompat.app.AppCompatActivity <|-- com.example.project_android.LoginActivity
+androidx.appcompat.app.AppCompatActivity <|-- com.example.project_android.PlanningActivity
+androidx.appcompat.app.AppCompatActivity <|-- com.example.project_android.MainActivity
+com.example.project_android.ScheduleFragment +.. com.example.project_android.ScheduleFragment$Companion
+androidx.fragment.app.Fragment <|-- com.example.project_android.ScheduleFragment
+androidx.appcompat.app.AppCompatActivity <|-- com.example.project_android.LobbyActivity
+@enduml
