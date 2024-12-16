@@ -1,6 +1,7 @@
 package com.example.project_android
 
 import android.annotation.SuppressLint
+import android.app.AlertDialog
 import android.app.DatePickerDialog
 import android.content.Intent
 import android.os.Bundle
@@ -8,6 +9,7 @@ import android.view.MenuItem
 import android.view.View
 import android.widget.Button
 import android.widget.EditText
+import android.widget.ImageView
 import android.widget.TextView
 import androidx.appcompat.app.ActionBarDrawerToggle
 import androidx.appcompat.app.AppCompatActivity
@@ -18,6 +20,9 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.navigation.NavigationView
 import java.util.Calendar
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.auth.FirebaseAuth
+import com.bumptech.glide.Glide
 
 class LobbyActivity : AppCompatActivity() {
 
@@ -27,12 +32,27 @@ class LobbyActivity : AppCompatActivity() {
     private lateinit var addButton: FloatingActionButton
     private lateinit var startDateButton: Button
     private lateinit var endDateButton: Button
+    private val db = FirebaseFirestore.getInstance()
+    private val auth = FirebaseAuth.getInstance()
 
     @SuppressLint("MissingInflatedId")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_lobby)
-
+        val userId = auth.currentUser?.uid
+        val usernameTextView = findViewById<TextView>(R.id.user_name)
+        if (userId != null) {
+            db.collection("users").document(userId).get().addOnSuccessListener { document ->
+                if (document != null) {
+                    val username = document.getString("username")
+                    usernameTextView.text = username ?: "使用者"
+                }
+            }.addOnFailureListener {
+                usernameTextView.text = "載入失敗"
+            }
+        } else {
+            usernameTextView.text = "未登入"
+        }
         drawerLayout = findViewById(R.id.drawer_layout)
         val navView: NavigationView = findViewById(R.id.navigation_view)
 
@@ -47,7 +67,7 @@ class LobbyActivity : AppCompatActivity() {
         navView.setNavigationItemSelectedListener { item: MenuItem ->
             when (item.itemId) {
                 R.id.nav_profile -> {
-
+                    showProfileDialog()
                 }
                 R.id.nav_settings -> {
 
@@ -66,6 +86,39 @@ class LobbyActivity : AppCompatActivity() {
         }
     }
 
+    private fun showProfileDialog() {
+        val dialogView = layoutInflater.inflate(R.layout.dialog_profile, null)
+
+        val profileImageView = dialogView.findViewById<ImageView>(R.id.profile_image)
+        val usernameTextView = dialogView.findViewById<TextView>(R.id.profile_username)
+        val emailTextView = dialogView.findViewById<TextView>(R.id.profile_email)
+
+        val userId = auth.currentUser?.uid
+        if (userId != null) {
+            db.collection("users").document(userId).get().addOnSuccessListener { document ->
+                if (document != null) {
+                    val username = document.getString("username")
+                    val email = document.getString("email")
+                    val avatarUrl = document.getString("avatarUrl")
+
+                    usernameTextView.text = username
+                    emailTextView.text = email
+
+                    if (!avatarUrl.isNullOrEmpty()) {
+                        // 使用 Glide 或 Picasso 加載頭像
+                        Glide.with(this).load(avatarUrl).into(profileImageView)
+                    }
+                }
+            }
+        }
+
+        val dialog = AlertDialog.Builder(this)
+            .setTitle("個人資料")
+            .setView(dialogView)
+            .setPositiveButton("關閉", null)
+            .create()
+        dialog.show()
+    }
 
 
 
