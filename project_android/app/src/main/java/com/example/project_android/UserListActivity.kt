@@ -1,108 +1,137 @@
 package com.example.project_android
 import android.os.Bundle
+import android.view.LayoutInflater
+import android.view.View
 import android.widget.EditText
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.floatingactionbutton.FloatingActionButton
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.ktx.toObject
 
 class UserListActivity : AppCompatActivity() {
 
-    private lateinit var firestore: FirebaseFirestore
     private lateinit var recyclerView: RecyclerView
+    private lateinit var adapter: UserListAdapter
     private lateinit var addUserButton: FloatingActionButton
 
-    private val scheduleId: String = "your_schedule_id" // Replace with the actual ID
+    private val firestore = FirebaseFirestore.getInstance()
+    private val currentUserId = FirebaseAuth.getInstance().currentUser?.uid
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_user_list)
 
-        firestore = FirebaseFirestore.getInstance()
-        recyclerView = findViewById(R.id.user_list_recycler_view)
-        addUserButton = findViewById(R.id.add_user_button)
+        recyclerView = findViewById(R.id.recycler_view)
+        addUserButton = findViewById(R.id.fab_add_user)
 
         recyclerView.layoutManager = LinearLayoutManager(this)
+        adapter = UserListAdapter { userId -> showUserDetails(userId) }
+        recyclerView.adapter = adapter
 
-        loadUserList()
+        val scheduleId = intent.getStringExtra("SCHEDULE_ID")
+        if (scheduleId != null) {
+            fetchUserList(scheduleId)
+        } else {
+            Toast.makeText(this, "Invalid schedule ID", Toast.LENGTH_SHORT).show()
+            finish()
+        }
 
         addUserButton.setOnClickListener {
-            showAddUserDialog()
+            if (scheduleId != null) {
+                showAddUserDialog(scheduleId)
+            }
         }
     }
 
-    private fun loadUserList() {
-        firestore.collection("schedules").document(scheduleId)
-            .get()
+    private fun fetchUserList(scheduleId: String) {
+        firestore.collection("schedules").document(scheduleId).get()
             .addOnSuccessListener { document ->
-                val collaborators = document["collaborators"] as? List<Map<String, String>> ?: listOf()
-                val userList = collaborators.map {
-                    User(
-                        id = it["id"] ?: "",
-                        name = it["name"] ?: "Unknown",
-                        role = if (it["id"] == document["ownerId"]) "主辦人" else "旅伴"
-                    )
-                }
+                val owner = document.getString("owner") ?: "Unknown"
+                val collaborators = document.get("collaborators") as? List<String> ?: emptyList()
 
-                recyclerView.adapter = UserListAdapter(userList) { userId ->
-                    showUserDetails(userId)
-                }
+                adapter.setUsers(owner, collaborators)
+            }
+            .addOnFailureListener {
+                Toast.makeText(this, "Failed to load users", Toast.LENGTH_SHORT).show()
             }
     }
 
     private fun showUserDetails(userId: String) {
-        firestore.collection("users").document(userId)
-            .get()
+        firestore.collection("users").document(userId).get()
             .addOnSuccessListener { document ->
-                val userName = document["name"] as? String ?: "Unknown"
-                val userEmail = document["email"] as? String ?: "Unknown"
+                val user = document.toObject<User>()
+                if (user != null) {
+                    val view = LayoutInflater.from(this).inflate(R.layout.dialog_user_details, null)
+                    view.findViewById<TextView>(R.id.user_name).text = user.name
+                    view.findViewById<TextView>(R.id.user_email).text = user.email
 
-                val dialogView = layoutInflater.inflate(R.layout.dialog_user_details, null)
-                dialogView.findViewById<TextView>(R.id.user_name_text).text = userName
-                dialogView.findViewById<TextView>(R.id.user_email_text).text = userEmail
-
-                val dialog = AlertDialog.Builder(this)
-                    .setTitle("用戶詳細資料")
-                    .setView(dialogView)
-                    .setNegativeButton("關閉", null)
-                    .create()
-                dialog.show()
+                    AlertDialog.Builder(this)
+                        .setTitle("User Details")
+                        .setView(view)
+                        .setPositiveButton("OK", null)
+                        .show()
+                }
+            }
+            .addOnFailureListener {
+                Toast.makeText(this, "Failed to load user details", Toast.LENGTH_SHORT).show()
             }
     }
 
-    private fun showAddUserDialog() {
-        val dialogView = layoutInflater.inflate(R.layout.dialog_add_user, null)
-        val emailEditText = dialogView.findViewById<EditText>(R.id.email_edit_text)
+    private fun showAddUserDialog(scheduleId: String) {
+        val view = LayoutInflater.from(this).inflate(R.layout.dialog_add_user, null)
+        val emailInput = view.findViewById<EditText>(R.id.email_input)
 
-        val dialog = AlertDialog.Builder(this)
-            .setTitle("新增用戶")
-            .setView(dialogView)
-            .setPositiveButton("加入") { _, _ ->
-                val email = emailEditText.text.toString()
-
-                firestore.collection("users")
-                    .whereEqualTo("email", email)
-                    .get()
-                    .addOnSuccessListener { querySnapshot ->
-                        if (!querySnapshot.isEmpty) {
-                            val userId = querySnapshot.documents[0].id
-
-                            firestore.collection("users").document(userId)
-                                .update("schedules", FieldValue.arrayUnion(scheduleId))
-
-                            firestore.collection("schedules").document(scheduleId)
-                                .update("collaborators", FieldValue.arrayUnion(userId))
-
-                            loadUserList() // Refresh the list
-                        }
-                    }
+        AlertDialog.Builder(this)
+            .setTitle("Add User")
+            .setView(view)
+            .setPositiveButton("Add") { _, _ ->
+                val email = emailInput.text.toString()
+                if (email.isNotEmpty()) {
+                    addUserToSchedule(scheduleId, email)
+                } else {
+                    Toast.makeText(this, "Email cannot be empty", Toast.LENGTH_SHORT).show()
+                }
             }
-            .setNegativeButton("取消", null)
-            .create()
-        dialog.show()
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    private fun addUserToSchedule(scheduleId: String, email: String) {
+        firestore.collection("users").whereEqualTo("email", email).get()
+            .addOnSuccessListener { querySnapshot ->
+                if (!querySnapshot.isEmpty) {
+                    val userDoc = querySnapshot.documents[0]
+                    val userId = userDoc.id
+
+                    // Update user's schedules
+                    firestore.collection("users").document(userId).update("schedules", FieldValue.arrayUnion(scheduleId))
+                        .addOnSuccessListener {
+                            // Update schedule's collaborators
+                            firestore.collection("schedules").document(scheduleId).update("collaborators", FieldValue.arrayUnion(userId))
+                                .addOnSuccessListener {
+                                    Toast.makeText(this, "User added successfully", Toast.LENGTH_SHORT).show()
+                                    fetchUserList(scheduleId)
+                                }
+                                .addOnFailureListener {
+                                    Toast.makeText(this, "Failed to update collaborators", Toast.LENGTH_SHORT).show()
+                                }
+                        }
+                        .addOnFailureListener {
+                            Toast.makeText(this, "Failed to update user's schedules", Toast.LENGTH_SHORT).show()
+                        }
+                } else {
+                    Toast.makeText(this, "User not found", Toast.LENGTH_SHORT).show()
+                }
+            }
+            .addOnFailureListener {
+                Toast.makeText(this, "Failed to search for user", Toast.LENGTH_SHORT).show()
+            }
     }
 }

@@ -39,6 +39,7 @@ class PlanningActivity : AppCompatActivity() {
         val startDateStr = intent.getStringExtra("START_DATE")
         val endDateStr = intent.getStringExtra("END_DATE")
         val members = intent.getStringArrayListExtra("MEMBERS_LIST")
+        val scheduleId = intent.getStringExtra("SCHEDULE_ID")
 
         // 初始化 UI 元素
         scheduleNameTextView = findViewById(R.id.schedule_name_text)
@@ -176,6 +177,7 @@ class PlanningActivity : AppCompatActivity() {
 
     private fun showUserList() {
         val intent = Intent(this, UserListActivity::class.java)
+        intent.putExtra("SCHEDULE_ID", intent.getStringExtra("SCHEDULE_ID"))
         startActivity(intent)
     }
 

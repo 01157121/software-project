@@ -5,20 +5,22 @@
     android:orientation="horizontal"
     android:padding="16dp">
 
+    <!-- 用戶名稱 -->
     <TextView
         android:id="@+id/user_name_text"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="1"
-        android:text="User Name"
+        android:text="用戶名稱"
         android:textSize="16sp"
         android:textStyle="bold" />
 
+    <!-- 用戶角色 -->
     <TextView
         android:id="@+id/user_role_text"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Role"
+        android:text="角色"
         android:textSize="14sp"
         android:textStyle="italic" />
 </LinearLayout>

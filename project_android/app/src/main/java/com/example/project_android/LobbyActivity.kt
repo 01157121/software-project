@@ -217,6 +217,7 @@ class LobbyActivity : AppCompatActivity() {
                 intent.putExtra("SCHEDULE_NAME", scheduleName)
                 intent.putExtra("START_DATE", startDate)
                 intent.putExtra("END_DATE", endDate)
+                intent.putExtra("SCHEDULE_ID", scheduleId)
                 intent.putStringArrayListExtra("MEMBERS_LIST", ArrayList(members))
                 startActivity(intent)
             }
