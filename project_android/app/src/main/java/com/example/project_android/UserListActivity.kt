@@ -20,7 +20,7 @@ class UserListActivity : AppCompatActivity() {
     private lateinit var recyclerView: RecyclerView
     private lateinit var adapter: UserListAdapter
     private lateinit var addUserButton: FloatingActionButton
-
+    private var scheduleId: String? = null
     private val firestore = FirebaseFirestore.getInstance()
     private val currentUserId = FirebaseAuth.getInstance().currentUser?.uid
 
@@ -35,25 +35,29 @@ class UserListActivity : AppCompatActivity() {
         adapter = UserListAdapter { userId -> showUserDetails(userId) }
         recyclerView.adapter = adapter
 
-        val scheduleId = intent.getStringExtra("SCHEDULE_ID")
-        if (scheduleId != null) {
-            fetchUserList(scheduleId)
-        } else {
+        scheduleId = intent.getStringExtra("SCHEDULE_ID")
+        scheduleId?.let { id ->
+            fetchUserList(id) // 在這裡 id 是非空的
+        } ?: run {
             Toast.makeText(this, "Invalid schedule ID", Toast.LENGTH_SHORT).show()
             finish()
         }
 
         addUserButton.setOnClickListener {
-            if (scheduleId != null) {
-                showAddUserDialog(scheduleId)
+            scheduleId?.let { id ->
+                showAddUserDialog(id) // 在這裡 id 是非空的
+            } ?: run {
+                Toast.makeText(this, "Invalid schedule ID", Toast.LENGTH_SHORT).show()
             }
         }
+
     }
+    
 
     private fun fetchUserList(scheduleId: String) {
         firestore.collection("schedules").document(scheduleId).get()
             .addOnSuccessListener { document ->
-                val owner = document.getString("owner") ?: "Unknown"
+                val owner = document.getString("createdBy") ?: "Unknown"
                 val collaborators = document.get("collaborators") as? List<String> ?: emptyList()
 
                 adapter.setUsers(owner, collaborators)
@@ -86,7 +90,7 @@ class UserListActivity : AppCompatActivity() {
 
     private fun showAddUserDialog(scheduleId: String) {
         val view = LayoutInflater.from(this).inflate(R.layout.dialog_add_user, null)
-        val emailInput = view.findViewById<EditText>(R.id.email_input)
+        val emailInput = view.findViewById<EditText>(R.id.add_user_email_input)
 
         AlertDialog.Builder(this)
             .setTitle("Add User")
@@ -110,10 +114,10 @@ class UserListActivity : AppCompatActivity() {
                     val userDoc = querySnapshot.documents[0]
                     val userId = userDoc.id
 
-                    // Update user's schedules
+                    // 更新用戶的日程
                     firestore.collection("users").document(userId).update("schedules", FieldValue.arrayUnion(scheduleId))
                         .addOnSuccessListener {
-                            // Update schedule's collaborators
+                            // 更新日程的合作者
                             firestore.collection("schedules").document(scheduleId).update("collaborators", FieldValue.arrayUnion(userId))
                                 .addOnSuccessListener {
                                     Toast.makeText(this, "User added successfully", Toast.LENGTH_SHORT).show()
@@ -134,4 +138,5 @@ class UserListActivity : AppCompatActivity() {
                 Toast.makeText(this, "Failed to search for user", Toast.LENGTH_SHORT).show()
             }
     }
+
 }

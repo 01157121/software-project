@@ -49,6 +49,8 @@ class PlanningActivity : AppCompatActivity() {
         members = intent.getStringArrayListExtra("MEMBERS_LIST")?: arrayListOf()
         scheduleId = intent.getStringExtra("SCHEDULE_ID") ?: throw IllegalArgumentException("SCHEDULE_ID is required")
 
+
+
         // 初始化 UI 元素
         scheduleNameTextView = findViewById(R.id.schedule_name_text)
         dateRangeTextView = findViewById(R.id.date_range_text)
@@ -187,7 +189,7 @@ class PlanningActivity : AppCompatActivity() {
 
     private fun showUserList() {
         val intent = Intent(this, UserListActivity::class.java)
-        intent.putExtra("SCHEDULE_ID", intent.getStringExtra("SCHEDULE_ID"))
+        intent.putExtra("SCHEDULE_ID", scheduleId)
         startActivity(intent)
     }
 
