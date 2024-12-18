@@ -1,4 +1,6 @@
 package com.example.project_android
+
+import android.app.AlertDialog
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
 import android.content.Intent
@@ -24,7 +26,9 @@ class PlanningActivity : AppCompatActivity() {
     private lateinit var navigationView: NavigationView
     private lateinit var addButton: FloatingActionButton
     private lateinit var addAccountingButton: Button
-
+    private lateinit var showAccountingResultButton: Button
+    private val accountingResults = mutableListOf<Triple<String, String, Double>>() // 用於保存分帳結果
+    private lateinit var members: ArrayList<String>
     var startHour: Int = 0
     var startMinute: Int = 0
     var endHour: Int = 0
@@ -41,13 +45,13 @@ class PlanningActivity : AppCompatActivity() {
         val members = intent.getStringArrayListExtra("MEMBERS_LIST")
         val scheduleId = intent.getStringExtra("SCHEDULE_ID")
 
+        members = intent.getStringArrayListExtra("MEMBERS_LIST") ?: arrayListOf()
         // 初始化 UI 元素
         scheduleNameTextView = findViewById(R.id.schedule_name_text)
         dateRangeTextView = findViewById(R.id.date_range_text)
         drawerLayout = findViewById(R.id.drawer_layout)
         navigationView = findViewById(R.id.navigation_view)
         addButton = findViewById(R.id.add_plan_button)
-        addAccountingButton = findViewById(R.id.add_accounting_button)
 
         val dateFormat = SimpleDateFormat("yyyy/MM/dd", Locale.getDefault())
         try {
@@ -68,15 +72,16 @@ class PlanningActivity : AppCompatActivity() {
             showCreatePlan(scheduleListContainer)
         }
 
-        // 新增分账功能
-        addAccountingButton.setOnClickListener {
-            addAccounting(scheduleListContainer)
+        // 設定選單圖示的點擊事件
+        val menuIcon: ImageView = findViewById(R.id.menu_icon)
+        menuIcon.setOnClickListener {
+            drawerLayout.openDrawer(Gravity.START)
         }
 
         // 导航菜单点击事件
         setupNavigationMenu()
     }
-
+    // 生成日期範圍的函數
     private fun generateDateRange(startDate: Date?, endDate: Date?) {
         if (startDate == null || endDate == null) return
         val calendar = Calendar.getInstance()
@@ -165,6 +170,8 @@ class PlanningActivity : AppCompatActivity() {
 
         navigationView.setNavigationItemSelectedListener { menuItem ->
             when (menuItem.itemId) {
+                R.id.add_accounting -> addAccounting()
+                R.id.show_accounting_result -> showAccountingResult()
                 R.id.nav_user_list -> showUserList()
                 R.id.nav_save -> saveSchedule()
                 R.id.nav_export -> exportSchedule()
@@ -195,7 +202,104 @@ class PlanningActivity : AppCompatActivity() {
         finish()
     }
 
-    private fun addAccounting(container: LinearLayout) {
-        // 分账功能实现
+    private fun addAccounting() {
+        val dialogView = layoutInflater.inflate(R.layout.dialog_split_bill, null)
+
+        val dialog = AlertDialog.Builder(this)
+            .setTitle("分帳")
+            .setView(dialogView)
+            .create()
+
+        // 設置 Adapter 給付款者的 ListView
+        val filteredMembers = members?.filter { it.isNotBlank() } ?: arrayListOf()
+        val singleChoiceAdapter = ArrayAdapter(
+            this,
+            android.R.layout.simple_list_item_single_choice,
+            filteredMembers
+        )
+        val whoPaidList = dialogView.findViewById<ListView>(R.id.who_paid_list)
+        whoPaidList.adapter = singleChoiceAdapter
+        whoPaidList.choiceMode = ListView.CHOICE_MODE_SINGLE
+
+        // 動態生成欠款者的選項
+        val whoOwesContainer = dialogView.findViewById<LinearLayout>(R.id.who_owes_container)
+        filteredMembers.forEach { member ->
+            val itemView = layoutInflater.inflate(R.layout.item_who_owes, null)
+
+            val checkBox = itemView.findViewById<CheckBox>(R.id.checkbox_who_owes)
+            itemView.findViewById<EditText>(R.id.amount_input)
+
+            checkBox.text = member
+            whoOwesContainer.addView(itemView)
+        }
+
+        // 按鈕邏輯
+        dialogView.findViewById<Button>(R.id.cancel_button).setOnClickListener {
+            dialog.dismiss()
+        }
+
+        dialogView.findViewById<Button>(R.id.submit_button).setOnClickListener {
+            val selectedWhoPaidPosition = whoPaidList.checkedItemPosition
+            if (selectedWhoPaidPosition == -1) {
+                Toast.makeText(this, "請選擇付錢者", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            val whoPaid = filteredMembers[selectedWhoPaidPosition]
+            val newResults = mutableListOf<Triple<String, String, Double>>() // 暫存新結果
+            var totalOwed = 0.0 // 總欠款金額
+            for (i in 0 until whoOwesContainer.childCount) {
+                val itemView = whoOwesContainer.getChildAt(i)
+                val checkBox = itemView.findViewById<CheckBox>(R.id.checkbox_who_owes)
+                val amountInput = itemView.findViewById<EditText>(R.id.amount_input)
+
+                if (checkBox.isChecked) {
+                    val amount = amountInput.text.toString().toDoubleOrNull()
+                    if (amount == null || amount <= 0) {
+                        Toast.makeText(this, "請輸入有效金額", Toast.LENGTH_SHORT).show()
+                        return@setOnClickListener
+                    }
+                    totalOwed += amount // 累計欠款金額
+                    if (checkBox.text.toString() != whoPaid) {
+                        // 只有欠款者與付款者不同時才保存到結果中
+                        newResults.add(Triple(checkBox.text.toString(), whoPaid, amount))
+                    }
+                }
+            }
+
+            if (totalOwed == 0.0) {
+                Toast.makeText(this, "請選擇至少一名欠款者並輸入金額", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            val amountPaidInput = dialogView.findViewById<EditText>(R.id.amount_paid_input)
+            val amountPaid = amountPaidInput.text.toString().toDoubleOrNull()
+            if (amountPaid == null || totalOwed != amountPaid) {
+                Toast.makeText(this, "總欠款金額必須等於付款金額", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            // 更新分帳結果
+            accountingResults.clear()
+            accountingResults.addAll(newResults)
+
+            Toast.makeText(this, "分帳結果已保存", Toast.LENGTH_SHORT).show()
+
+            dialog.dismiss()
+
+        }
+
+        dialog.show()
+
+    }
+
+    private fun showAccountingResult() {
+        if (accountingResults.isEmpty()) {
+            Toast.makeText(this, "目前沒有分帳結果", Toast.LENGTH_SHORT).show()
+        } else {
+            val resultText = accountingResults.joinToString("\n") { (debtor, creditor, amount) ->
+                "$debtor 欠 $creditor $amount"
+            }
+            Toast.makeText(this, resultText, Toast.LENGTH_LONG).show()
+        }
     }
 }
