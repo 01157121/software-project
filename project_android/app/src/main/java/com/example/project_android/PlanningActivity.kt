@@ -42,10 +42,9 @@ class PlanningActivity : AppCompatActivity() {
         val scheduleName = intent.getStringExtra("SCHEDULE_NAME")
         val startDateStr = intent.getStringExtra("START_DATE")
         val endDateStr = intent.getStringExtra("END_DATE")
-        val members = intent.getStringArrayListExtra("MEMBERS_LIST")
+        val members = intent.getStringArrayListExtra("MEMBERS_LIST")?: arrayListOf()
         val scheduleId = intent.getStringExtra("SCHEDULE_ID")
 
-        members = intent.getStringArrayListExtra("MEMBERS_LIST") ?: arrayListOf()
         // 初始化 UI 元素
         scheduleNameTextView = findViewById(R.id.schedule_name_text)
         dateRangeTextView = findViewById(R.id.date_range_text)
