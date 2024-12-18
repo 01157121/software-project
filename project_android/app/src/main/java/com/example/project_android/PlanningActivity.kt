@@ -13,6 +13,8 @@ import androidx.drawerlayout.widget.DrawerLayout
 import androidx.viewpager2.widget.ViewPager2
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.navigation.NavigationView
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.*
@@ -29,6 +31,8 @@ class PlanningActivity : AppCompatActivity() {
     private lateinit var showAccountingResultButton: Button
     private val accountingResults = mutableListOf<Triple<String, String, Double>>() // 用於保存分帳結果
     private lateinit var members: ArrayList<String>
+    private val db = FirebaseFirestore.getInstance()
+    private lateinit var scheduleId: String
     var startHour: Int = 0
     var startMinute: Int = 0
     var endHour: Int = 0
@@ -42,8 +46,8 @@ class PlanningActivity : AppCompatActivity() {
         val scheduleName = intent.getStringExtra("SCHEDULE_NAME")
         val startDateStr = intent.getStringExtra("START_DATE")
         val endDateStr = intent.getStringExtra("END_DATE")
-        val members = intent.getStringArrayListExtra("MEMBERS_LIST")?: arrayListOf()
-        val scheduleId = intent.getStringExtra("SCHEDULE_ID")
+        members = intent.getStringArrayListExtra("MEMBERS_LIST")?: arrayListOf()
+        scheduleId = intent.getStringExtra("SCHEDULE_ID") ?: throw IllegalArgumentException("SCHEDULE_ID is required")
 
         // 初始化 UI 元素
         scheduleNameTextView = findViewById(R.id.schedule_name_text)
@@ -244,7 +248,7 @@ class PlanningActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
             val whoPaid = filteredMembers[selectedWhoPaidPosition]
-            val newResults = mutableListOf<Triple<String, String, Double>>() // 暫存新結果
+            val newResults = mutableListOf<Map<String, Any>>()
             var totalOwed = 0.0 // 總欠款金額
             for (i in 0 until whoOwesContainer.childCount) {
                 val itemView = whoOwesContainer.getChildAt(i)
@@ -258,10 +262,9 @@ class PlanningActivity : AppCompatActivity() {
                         return@setOnClickListener
                     }
                     totalOwed += amount // 累計欠款金額
-                    if (checkBox.text.toString() != whoPaid) {
-                        // 只有欠款者與付款者不同時才保存到結果中
-                        newResults.add(Triple(checkBox.text.toString(), whoPaid, amount))
-                    }
+                    newResults.add(
+                        convertToMap( Triple(checkBox.text.toString(), whoPaid, amount) )
+                    )
                 }
             }
 
@@ -279,7 +282,9 @@ class PlanningActivity : AppCompatActivity() {
 
             // 更新分帳結果
             accountingResults.clear()
-            accountingResults.addAll(newResults)
+            val accountingResultId = generateUniqueAccountingResultId()
+            saveAccountingResultToFirestore(scheduleId,accountingResultId,newResults)
+            //accountingResults.addAll(newResults)
 
             Toast.makeText(this, "分帳結果已保存", Toast.LENGTH_SHORT).show()
 
@@ -290,15 +295,104 @@ class PlanningActivity : AppCompatActivity() {
         dialog.show()
 
     }
+    //把資料修改成firebase可儲存的格式
+    private fun convertToMap(triple: Triple<String, String, Double>):Map<String, Any> {
+        return mapOf(
+            "debtor" to triple.first,   // 欠款者
+            "creditor" to triple.second, // 付款者
+            "amount" to triple.third    // 金額
+        )
+    }
 
     private fun showAccountingResult() {
-        if (accountingResults.isEmpty()) {
-            Toast.makeText(this, "目前沒有分帳結果", Toast.LENGTH_SHORT).show()
-        } else {
-            val resultText = accountingResults.joinToString("\n") { (debtor, creditor, amount) ->
-                "$debtor 欠 $creditor $amount"
+        db.collection("schedules")
+            .document(scheduleId)
+            .collection("accounting_results")
+            .get()
+            .addOnSuccessListener { querySnapshot ->
+                if (querySnapshot.isEmpty) {
+                    showToast("沒有找到任何分帳紀錄")
+                    return@addOnSuccessListener
+                }
+
+                val allResults = mutableListOf<Map<String, Any>>()
+
+                for (document in querySnapshot.documents) {
+                    val results = document.get("results") as? List<Map<String, Any>>
+                    if (results != null) {
+                        allResults.addAll(results)
+                    }
+                }
+
+                // 顯示對話框
+                showAccountingResultDialog(allResults)
             }
-            Toast.makeText(this, resultText, Toast.LENGTH_LONG).show()
+            .addOnFailureListener { e ->
+                showToast("無法讀取分帳紀錄: ${e.message}")
+            }
+    }
+    //用簡單dialog顯示分帳紀錄
+    private fun showAccountingResultDialog(results: List<Map<String, Any>>) {
+        // 加載自定義對話框佈局
+        val dialogView = layoutInflater.inflate(R.layout.dialog_accounting_results, null)
+        val resultsContainer = dialogView.findViewById<LinearLayout>(R.id.accounting_results_container)
+        val closeButton = dialogView.findViewById<Button>(R.id.close_button)
+
+        // 動態生成每個分帳結果
+        results.forEach { result ->
+            val debtor = result["debtor"] as? String ?: "未知"
+            val creditor = result["creditor"] as? String ?: "未知"
+            val amount = result["amount"] as? Double ?: 0.0
+
+            val resultView = TextView(this).apply {
+                text = "欠款者: $debtor\n付款者: $creditor\n金額: $amount\n"
+                textSize = 16f
+                setPadding(8, 8, 8, 8)
+            }
+            resultsContainer.addView(resultView)
         }
+
+        // 創建並顯示對話框
+        val dialog = AlertDialog.Builder(this)
+            .setView(dialogView)
+            .create()
+
+        // 設置關閉按鈕邏輯
+        closeButton.setOnClickListener {
+            dialog.dismiss()
+        }
+
+        dialog.show()
+    }
+
+    private fun saveAccountingResultToFirestore(scheduleId: String, AccountingResultId: String, results: List<Map<String, Any>>) {
+        val currentUserId = FirebaseAuth.getInstance().currentUser?.uid
+        if (currentUserId == null) {
+            showToast("用戶未登入")
+            return
+        }
+
+        val accountingData = hashMapOf(
+            "results" to results
+        )
+        db.collection("schedules")
+            .document(scheduleId)
+            .collection("accounting_results")
+            .document(AccountingResultId)
+            .set(accountingData)
+            .addOnSuccessListener {
+                showToast("分帳紀錄添加成功！")
+            }
+            .addOnFailureListener { e ->
+                showToast("分帳紀錄添加到用戶資料失敗: ${e.message}")
+            }
+    }
+
+    private fun showToast(message: String) {
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+    }
+
+    private fun generateUniqueAccountingResultId(): String {
+        return java.util.UUID.randomUUID().toString()
     }
 }
