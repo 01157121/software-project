@@ -198,9 +198,9 @@ class LobbyActivity : AppCompatActivity() {
                 val scheduleName = dialogView.findViewById<EditText>(R.id.schedule_name).text.toString()
                 val startDate = dialogView.findViewById<TextView>(R.id.start_date_button_text).text.toString()
                 val endDate = dialogView.findViewById<TextView>(R.id.end_date_button_text).text.toString()
-<<<<<<< Updated upstream
+
                 val members = memberList.toList()
-=======
+
                 if (scheduleName.isBlank() || startDate.isBlank() || endDate.isBlank()) {
 
                     showToast("請填寫完整信息")
@@ -212,7 +212,7 @@ class LobbyActivity : AppCompatActivity() {
 
                 // 將行程表存入 Firestore
                 saveScheduleToFirestore(scheduleId, scheduleName, startDate, endDate)
->>>>>>> Stashed changes
+
                 val intent = Intent(this, PlanningActivity::class.java)
                 intent.putExtra("SCHEDULE_NAME", scheduleName)
                 intent.putExtra("START_DATE", startDate)
@@ -255,7 +255,7 @@ class LobbyActivity : AppCompatActivity() {
 
         datePickerDialog.show()
     }
-<<<<<<< Updated upstream
+
     //fun 來跳出新增成員的dialog
     private fun showAddMemberDialog(onMemberAdded: (String) -> Unit) {
         val dialogView = layoutInflater.inflate(R.layout.dialog_add_member, null)
@@ -276,7 +276,7 @@ class LobbyActivity : AppCompatActivity() {
             .create()
         dialog.show()
     }
-=======
+
 
     private fun saveScheduleToFirestore(scheduleId: String, name: String, startDate: String, endDate: String) {
         val currentUserId = FirebaseAuth.getInstance().currentUser?.uid
@@ -329,5 +329,4 @@ class LobbyActivity : AppCompatActivity() {
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
     }
 
->>>>>>> Stashed changes
 }

@@ -5,7 +5,6 @@
     android:orientation="horizontal"
     android:padding="16dp">
 
-    <!-- 用戶名稱 -->
     <TextView
         android:id="@+id/user_name_text"
         android:layout_width="0dp"
@@ -15,7 +14,6 @@
         android:textSize="16sp"
         android:textStyle="bold" />
 
-    <!-- 用戶角色 -->
     <TextView
         android:id="@+id/user_role_text"
         android:layout_width="wrap_content"
