@@ -3,4 +3,6 @@
     <string name="open_drawer">Open Drawer</string>
     <string name="close_drawer">Close Drawer</string>
     <string name="default_web_client_id">942827281575-qcm3evdl1g8dqt1d3phent3rqgq9ft95.apps.googleusercontent.com</string>
+    <string name="add_accounting">新增分帳</string>
+    <string name="total_accounting">分帳紀錄</string>
 </resources>

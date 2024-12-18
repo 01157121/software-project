@@ -15,6 +15,6 @@ class SchedulePagerAdapter(fragmentActivity: FragmentActivity, private val dateL
     override fun createFragment(position: Int): Fragment {
         val date = dateList[position]
         val MemberList = MemberList
-        return ScheduleFragment.newInstance(date,MemberList)
+        return ScheduleFragment.newInstance(date)
     }
 }

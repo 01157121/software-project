@@ -43,16 +43,16 @@ class PlanningActivity : AppCompatActivity() {
 
     // 新增行程的浮動按鈕
     private lateinit var addButton: FloatingActionButton
-
+    private lateinit var AddAccountingBtn: Button
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_planning)
 
-        // 從 Intent 中接收行程名稱和日期範圍
+        // 從 Intent 中接收行程名稱和日期範圍和成員名單
         val scheduleName = intent.getStringExtra("SCHEDULE_NAME")
         val startDateStr = intent.getStringExtra("START_DATE")
         val endDateStr = intent.getStringExtra("END_DATE")
-
+        val Members = intent.getStringArrayListExtra("MEMBERS_LIST")
         // 初始化 UI 元素
         scheduleNameTextView = findViewById(R.id.schedule_name_text)
         dateRangeTextView = findViewById(R.id.date_range_text)
@@ -86,6 +86,12 @@ class PlanningActivity : AppCompatActivity() {
         addButton = findViewById(R.id.add_plan_button)
         addButton.setOnClickListener {
             showCreatePlan(scheduleListContainer)
+        }
+        // 新增分帳按鈕功能
+        val addAccountingContainer =
+        AddAccountingBtn = findViewById(R.id.add_accounting_button)
+        AddAccountingBtn.setOnClickListener {
+            addAccounting(scheduleListContainer)
         }
     }
 
