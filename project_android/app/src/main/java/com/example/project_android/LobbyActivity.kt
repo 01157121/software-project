@@ -198,7 +198,21 @@ class LobbyActivity : AppCompatActivity() {
                 val scheduleName = dialogView.findViewById<EditText>(R.id.schedule_name).text.toString()
                 val startDate = dialogView.findViewById<TextView>(R.id.start_date_button_text).text.toString()
                 val endDate = dialogView.findViewById<TextView>(R.id.end_date_button_text).text.toString()
+<<<<<<< Updated upstream
                 val members = memberList.toList()
+=======
+                if (scheduleName.isBlank() || startDate.isBlank() || endDate.isBlank()) {
+
+                    showToast("請填寫完整信息")
+                    return@setPositiveButton
+                }
+
+                // 生成行程表 ID
+                val scheduleId = generateUniqueScheduleId()
+
+                // 將行程表存入 Firestore
+                saveScheduleToFirestore(scheduleId, scheduleName, startDate, endDate)
+>>>>>>> Stashed changes
                 val intent = Intent(this, PlanningActivity::class.java)
                 intent.putExtra("SCHEDULE_NAME", scheduleName)
                 intent.putExtra("START_DATE", startDate)
@@ -222,6 +236,11 @@ class LobbyActivity : AppCompatActivity() {
             }
         }
     }
+
+    private fun generateUniqueScheduleId(): String {
+        return java.util.UUID.randomUUID().toString()
+    }
+
     // 顯示日期選擇器
     private fun showDatePickerDialog(onDateSelected: (String) -> Unit) {
         val calendar = Calendar.getInstance()
@@ -236,6 +255,7 @@ class LobbyActivity : AppCompatActivity() {
 
         datePickerDialog.show()
     }
+<<<<<<< Updated upstream
     //fun 來跳出新增成員的dialog
     private fun showAddMemberDialog(onMemberAdded: (String) -> Unit) {
         val dialogView = layoutInflater.inflate(R.layout.dialog_add_member, null)
@@ -256,4 +276,58 @@ class LobbyActivity : AppCompatActivity() {
             .create()
         dialog.show()
     }
+=======
+
+    private fun saveScheduleToFirestore(scheduleId: String, name: String, startDate: String, endDate: String) {
+        val currentUserId = FirebaseAuth.getInstance().currentUser?.uid
+        if (currentUserId == null) {
+            showToast("用戶未登入")
+            return
+        }
+
+        val scheduleData = hashMapOf(
+            "scheduleId" to scheduleId,
+            "name" to name,
+            "startDate" to startDate,
+            "endDate" to endDate,
+            "createdBy" to currentUserId,
+            "collaborators" to listOf(currentUserId) // 默認創建者為唯一編輯者
+        )
+        db.collection("schedules")
+            .document(scheduleId)
+            .set(scheduleData)
+            .addOnSuccessListener {
+                saveScheduleToUserCollection(currentUserId, scheduleId)
+
+            }
+            .addOnFailureListener { e ->
+                showToast("行程表創建失敗: ${e.message}")
+            }
+    }
+
+    private fun saveScheduleToUserCollection(userId: String, scheduleId: String) {
+        val userScheduleData = hashMapOf(
+            "scheduleId" to scheduleId
+        )
+
+        val db = FirebaseFirestore.getInstance()
+        db.collection("users")
+            .document(userId)
+            .collection("schedules")
+            .document(scheduleId) // 使用行程表 ID 作為文檔 ID
+            .set(userScheduleData)
+            .addOnSuccessListener {
+                showToast("行程表已成功添加！")
+            }
+            .addOnFailureListener { e ->
+                showToast("行程表添加到用戶資料失敗: ${e.message}")
+            }
+    }
+
+
+    private fun showToast(message: String) {
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+    }
+
+>>>>>>> Stashed changes
 }

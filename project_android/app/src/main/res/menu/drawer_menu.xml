@@ -1,0 +1,18 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/nav_user_list"
+        android:title="用戶清單"
+        android:icon="@drawable/ic_user_list" />
+    <item
+        android:id="@+id/nav_save"
+        android:title="存檔"
+        android:icon="@drawable/ic_save" />
+    <item
+        android:id="@+id/nav_export"
+        android:title="匯出"
+        android:icon="@drawable/ic_export" />
+    <item
+        android:id="@+id/nav_home"
+        android:title="返回主頁"
+        android:icon="@drawable/ic_back" />
+</menu>

@@ -20,28 +20,22 @@ import java.util.Date
 import java.util.Locale
 import android.app.TimePickerDialog
 import android.os.PersistableBundle
+import android.view.Gravity
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.window.OnBackInvokedDispatcher
+import androidx.drawerlayout.widget.DrawerLayout
+import com.google.android.material.navigation.NavigationView
 
 class PlanningActivity : AppCompatActivity() {
-
-    // ViewPager2 用於顯示日期列表的頁面
     private lateinit var viewPager: ViewPager2
-
-    // 顯示行程名稱的 TextView
     private lateinit var scheduleNameTextView: TextView
-
-    // 顯示日期範圍的 TextView
     private lateinit var dateRangeTextView: TextView
-
-    // 儲存日期範圍的列表
     private val dateList: MutableList<Date> = mutableListOf()
-
-    // 開始日期與結束日期按鈕
     private lateinit var startDateButton: Button
     private lateinit var endDateButton: Button
-
-    // 新增行程的浮動按鈕
+    private lateinit var drawerLayout: DrawerLayout
+    private lateinit var navigationView: NavigationView
     private lateinit var addButton: FloatingActionButton
     private lateinit var AddAccountingBtn: Button
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -57,6 +51,8 @@ class PlanningActivity : AppCompatActivity() {
         scheduleNameTextView = findViewById(R.id.schedule_name_text)
         dateRangeTextView = findViewById(R.id.date_range_text)
 //        viewPager = findViewById(R.id.view_pager)
+        drawerLayout = findViewById(R.id.drawer_layout)
+        navigationView = findViewById(R.id.navigation_view)
 
         val dateFormat = SimpleDateFormat("yyyy/MM/dd", Locale.getDefault()) // 日期格式化工具
         try {
@@ -87,11 +83,30 @@ class PlanningActivity : AppCompatActivity() {
         addButton.setOnClickListener {
             showCreatePlan(scheduleListContainer)
         }
+<<<<<<< Updated upstream
         // 新增分帳按鈕功能
         val addAccountingContainer =
         AddAccountingBtn = findViewById(R.id.add_accounting_button)
         AddAccountingBtn.setOnClickListener {
             addAccounting(scheduleListContainer)
+=======
+        // 設定選單圖示的點擊事件
+        val menuIcon: ImageView = findViewById(R.id.menu_icon)
+        menuIcon.setOnClickListener {
+            drawerLayout.openDrawer(Gravity.START)
+        }
+
+        // 設置 NavigationView 的選項點擊事件
+        navigationView.setNavigationItemSelectedListener { menuItem ->
+            when (menuItem.itemId) {
+                R.id.nav_user_list -> showUserList()
+                R.id.nav_save -> saveSchedule()
+                R.id.nav_export -> exportSchedule()
+                R.id.nav_home -> goToHomePage()
+            }
+            drawerLayout.closeDrawer(Gravity.START)
+            true
+>>>>>>> Stashed changes
         }
     }
 
@@ -250,5 +265,27 @@ class PlanningActivity : AppCompatActivity() {
 
         // 新增行程到容器
         container.addView(scheduleView)
+    }
+
+    //drawer內容
+    private fun showUserList() {
+        // 展示用戶清單的邏輯
+        // 例如：顯示一個對話框或跳轉到新活動
+    }
+
+    private fun saveSchedule() {
+        // 存檔的邏輯
+        // 例如：將行程儲存到 Firestore
+    }
+
+    private fun exportSchedule() {
+        // 匯出的邏輯
+        // 例如：將行程導出為文件格式
+    }
+
+    private fun goToHomePage() {
+        val intent = Intent(this, LobbyActivity::class.java)
+        startActivity(intent)
+        finish()
     }
 }
