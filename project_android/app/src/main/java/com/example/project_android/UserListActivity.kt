@@ -70,7 +70,12 @@ class UserListActivity : AppCompatActivity() {
     private fun showUserDetails(userId: String) {
         firestore.collection("users").document(userId).get()
             .addOnSuccessListener { document ->
-                val user = document.toObject<User>()
+                val user = User(
+                    id = userId,
+                    name = document.getString("username") ?: "Unknown",
+                    email = document.getString("email") ?: "Unknown",
+                    role = ""
+                )
                 if (user != null) {
                     val view = LayoutInflater.from(this).inflate(R.layout.dialog_user_details, null)
                     view.findViewById<TextView>(R.id.user_name).text = user.name
@@ -115,7 +120,14 @@ class UserListActivity : AppCompatActivity() {
                     val userId = userDoc.id
 
                     // 更新用戶的日程
-                    firestore.collection("users").document(userId).update("schedules", FieldValue.arrayUnion(scheduleId))
+                    val userScheduleData = hashMapOf(
+                        "scheduleId" to scheduleId
+                    )
+                    firestore.collection("users")
+                        .document(userId)
+                        .collection("schedules")
+                        .document(scheduleId) // 使用行程表 ID 作為文檔 ID
+                        .set(userScheduleData)
                         .addOnSuccessListener {
                             // 更新日程的合作者
                             firestore.collection("schedules").document(scheduleId).update("collaborators", FieldValue.arrayUnion(userId))

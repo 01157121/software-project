@@ -4,6 +4,9 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.gms.tasks.Task
+import com.google.android.gms.tasks.Tasks
+import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
 
 // 資料模型
@@ -15,9 +18,9 @@ data class User(
 )
 
 class UserListAdapter(
+    private val db: FirebaseFirestore = FirebaseFirestore.getInstance(),
     private var userList: List<User> = emptyList(), // 用戶清單
-    private val onUserClick: (String) -> Unit, // 點擊事件 callback，傳遞用戶 ID
-    private val db: FirebaseFirestore = FirebaseFirestore.getInstance()
+    private val onUserClick: (String) -> Unit // 點擊事件 callback，傳遞用戶 ID
 ) : RecyclerView.Adapter<UserListAdapter.UserViewHolder>() {
 
     // ViewHolder 類別
@@ -50,39 +53,51 @@ class UserListAdapter(
     // 設置用戶清單
     fun setUsers(ownerId: String, collaborators: List<String>) {
         val updatedList = mutableListOf<User>()
+        val tasks = mutableListOf<Task<DocumentSnapshot>>() // 用來追蹤所有 Firestore 請求
 
-        // 主辦人
+        // 加載主辦人
         if (ownerId.isNotEmpty()) {
-            val defaultOwnerName = "主辦人"
-            db.collection("users").document(ownerId).get().addOnSuccessListener { document ->
-                if (document != null) {
-                    val username = document.getString("username") ?: defaultOwnerName // 如果為 null，則使用默認名稱
-                    updatedList.add(User(id = ownerId, name = username, email = "", role = "主辦人"))
+            val ownerTask = db.collection("users").document(ownerId).get().addOnCompleteListener { task ->
+                val username = if (task.isSuccessful && task.result != null) {
+                    task.result?.getString("username") ?: "主辦人"
                 } else {
-                    updatedList.add(User(id = ownerId, name = defaultOwnerName, email = "", role = "主辦人"))
+                    "載入失敗"
                 }
-            }.addOnFailureListener {
-                updatedList.add(User(id = ownerId, name = "載入失敗", email = "", role = "主辦人"))
+                val email = if (task.isSuccessful && task.result != null) {
+                    task.result?.getString("email") ?: "無郵件"
+                } else {
+                    "無郵件"
+                }
+                updatedList.add(User(id = ownerId, name = username, email = email, role = "主辦人"))
             }
+            tasks.add(ownerTask)
         }
 
-
-        // 旅伴
+        // 加載旅伴
         collaborators.forEach { collaboratorId ->
-            db.collection("users").document(collaboratorId).get().addOnSuccessListener { document ->
-                if (document != null) {
-                    val username = document.getString("username") ?: "旅伴" // 如果為 null，則使用默認名稱
-                    updatedList.add(User(id = collaboratorId, name = username, email = "", role = "旅伴"))
+            val collaboratorTask = db.collection("users").document(collaboratorId).get().addOnCompleteListener { task ->
+                val username = if (task.isSuccessful && task.result != null) {
+                    task.result?.getString("username") ?: "旅伴"
                 } else {
-                    updatedList.add(User(id = collaboratorId, name = "旅伴", email = "", role = "旅伴"))
+                    "載入失敗"
                 }
-            }.addOnFailureListener {
-                updatedList.add(User(id = collaboratorId, name = "載入失敗", email = "", role = "旅伴"))
+                val email = if (task.isSuccessful && task.result != null) {
+                    task.result?.getString("email") ?: "無郵件"
+                } else {
+                    "無郵件"
+                }
+                updatedList.add(User(id = collaboratorId, name = username, email = email, role = "旅伴"))
             }
+            tasks.add(collaboratorTask)
         }
 
-
-        userList = updatedList
-        notifyDataSetChanged() // 更新 UI
+        // 等待所有請求完成
+        Tasks.whenAllComplete(tasks).addOnCompleteListener {
+            // 所有請求完成後更新數據
+            userList = updatedList
+            notifyDataSetChanged()
+        }
     }
+
+
 }
