@@ -16,22 +16,19 @@ import com.example.project_android.R
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import java.text.SimpleDateFormat
 import java.util.*
-data class Schedule(
-    val planName: String,
-    var startHour: Int,
-    var startMinute: Int,
-    var endHour: Int,
-    var endMinute: Int
-)
+
+
 class DatePageAdapter(
     private val context: Context,
     private val startDate: Date,
-    private val endDate: Date,
-    private val schedules: MutableList<Schedule> = mutableListOf()
+    private val endDate: Date
 ) : RecyclerView.Adapter<DatePageAdapter.DateViewHolder>() {
 
     private val adapterDateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
     private val totalDays: Int
+
+    // 用於儲存行程
+    private val scheduleMap: MutableMap<String, MutableList<Schedule>> = mutableMapOf()
 
     init {
         val calendar = Calendar.getInstance()
@@ -51,11 +48,15 @@ class DatePageAdapter(
 
     override fun onBindViewHolder(holder: DateViewHolder, position: Int) {
         val currentDate = getDateForPosition(position)
-        holder.dateTextView.text = adapterDateFormat.format(currentDate)
+        val dateKey = adapterDateFormat.format(currentDate)
+        holder.dateTextView.text = dateKey
+
+        // 顯示行程列表
+        redrawSchedules(holder, dateKey)
 
         holder.addButton.setOnClickListener {
             // 顯示行程創建對話框
-            showCreatePlan(currentDate, holder)
+            showCreatePlan(currentDate, holder, dateKey)
         }
     }
 
@@ -68,8 +69,7 @@ class DatePageAdapter(
         return calendar.time
     }
 
-    private fun showCreatePlan(selectedDate: Date, holder: DateViewHolder) {
-        // 顯示行程創建對話框
+    private fun showCreatePlan(selectedDate: Date, holder: DateViewHolder, dateKey: String) {
         val dialogView = LayoutInflater.from(context).inflate(R.layout.dialog_create_plan, null)
         val show_current_date_textview: TextView = dialogView.findViewById(R.id.show_date_text)
 
@@ -82,7 +82,6 @@ class DatePageAdapter(
         var endMinute = 0
         show_current_date_textview.text = dateFormat.format(selectedDate)
         startTimeButton.setOnClickListener {
-            // 顯示時間選擇器
             showTimePickerDialog { hour, minute ->
                 startHour = hour
                 startMinute = minute
@@ -91,7 +90,6 @@ class DatePageAdapter(
         }
 
         endTimeButton.setOnClickListener {
-            // 顯示時間選擇器
             showTimePickerDialog { hour, minute ->
                 endHour = hour
                 endMinute = minute
@@ -105,17 +103,15 @@ class DatePageAdapter(
             .setPositiveButton("新增") { _, _ ->
                 val isValidTime = (startHour < endHour) || (startHour == endHour && startMinute < endMinute)
                 if (!isValidTime) {
-                    // 如果開始時間不早於結束時間，顯示錯誤訊息
                     androidx.appcompat.app.AlertDialog.Builder(context)
                         .setTitle("時間錯誤")
                         .setMessage("開始時間必須早於結束時間，請重新選擇時間。")
                         .setPositiveButton("確定", null)
                         .create()
                         .show()
-                }
-                else{
+                } else {
                     val planName = dialogView.findViewById<EditText>(R.id.plan_name).text.toString()
-                    addScheduleToContainer(planName, startHour, startMinute, endHour, endMinute, holder)
+                    addScheduleToContainer(planName, startHour, startMinute, endHour, endMinute, holder, dateKey)
                 }
             }
             .setNegativeButton("取消", null)
@@ -123,26 +119,22 @@ class DatePageAdapter(
 
         dialog.show()
     }
+
     private fun showTimePickerDialog(onTimeSelected: (Int, Int) -> Unit) {
-        // 使用自定義的布局
         val dialogView = LayoutInflater.from(context).inflate(R.layout.dialog_time_picker, null)
 
-        // 獲取滾輪選擇器
         val hourPicker: NumberPicker = dialogView.findViewById(R.id.hour_picker)
         val minutePicker: NumberPicker = dialogView.findViewById(R.id.minute_picker)
 
-        // 設置滾輪範圍
         hourPicker.minValue = 0
         hourPicker.maxValue = 23
         minutePicker.minValue = 0
         minutePicker.maxValue = 59
 
-        // 初始化當前時間
         val calendar = Calendar.getInstance()
         hourPicker.value = calendar.get(Calendar.HOUR_OF_DAY)
         minutePicker.value = calendar.get(Calendar.MINUTE)
 
-        // 顯示自定義對話框
         val dialog = androidx.appcompat.app.AlertDialog.Builder(context)
             .setTitle("選擇時間")
             .setView(dialogView)
@@ -163,25 +155,27 @@ class DatePageAdapter(
         startMinute: Int,
         endHour: Int,
         endMinute: Int,
-        holder: DateViewHolder
+        holder: DateViewHolder,
+        dateKey: String
     ) {
-        // 新增行程到清單
+        if (!scheduleMap.containsKey(dateKey)) {
+            scheduleMap[dateKey] = mutableListOf()
+        }
+
         val newSchedule = Schedule(planName, startHour, startMinute, endHour, endMinute)
-        schedules.add(newSchedule)
+        scheduleMap[dateKey]?.add(newSchedule)
 
-        // 按開始時間排序
-        schedules.sortWith(compareBy({ it.startHour }, { it.startMinute }))
+        scheduleMap[dateKey]?.sortWith(compareBy({ it.startHour }, { it.startMinute }))
 
-        // 重新繪製行程列表
-        redrawSchedules(holder)
+        redrawSchedules(holder, dateKey)
     }
 
     @SuppressLint("DefaultLocale")
-    private fun redrawSchedules(holder: DateViewHolder) {
-        // 清空容器
+    private fun redrawSchedules(holder: DateViewHolder, dateKey: String) {
         holder.scheduleListContainer.removeAllViews()
 
-        // 根據排序後的行程重新繪製
+        val schedules = scheduleMap[dateKey] ?: return
+
         for (schedule in schedules) {
             val scheduleView = LayoutInflater.from(context).inflate(R.layout.item_schedule, holder.scheduleListContainer, false)
 
@@ -208,9 +202,8 @@ class DatePageAdapter(
                     schedule.endHour = newEndHour
                     schedule.endMinute = newEndMinute
 
-                    // 重新排序和繪製
-                    schedules.sortWith(compareBy({ it.startHour }, { it.startMinute }))
-                    redrawSchedules(holder)
+                    scheduleMap[dateKey]?.sortWith(compareBy({ it.startHour }, { it.startMinute }))
+                    redrawSchedules(holder, dateKey)
                 }
             }
 
@@ -251,22 +244,19 @@ class DatePageAdapter(
             .setTitle("編輯行程時間")
             .setView(dialogView)
             .setPositiveButton("確定") { _, _ ->
-
                 val newStartHour = startHourPicker.value
                 val newStartMinute = startMinutePicker.value
                 val newEndHour = endHourPicker.value
                 val newEndMinute = endMinutePicker.value
                 val isValidTime = (newStartHour < newEndHour) || (newStartHour == newEndHour && newStartMinute < newEndMinute)
                 if (!isValidTime) {
-                    // 如果開始時間不早於結束時間，顯示錯誤訊息
                     androidx.appcompat.app.AlertDialog.Builder(context)
                         .setTitle("時間錯誤")
                         .setMessage("開始時間必須早於結束時間，請重新選擇時間。")
                         .setPositiveButton("確定", null)
                         .create()
                         .show()
-                }
-                else{
+                } else {
                     onTimeUpdated(newStartHour, newStartMinute, newEndHour, newEndMinute)
                 }
             }
@@ -284,7 +274,16 @@ class DatePageAdapter(
         val addButton: FloatingActionButton = view.findViewById(R.id.add_button)
         val scheduleListContainer: LinearLayout = view.findViewById(R.id.schedule_list_container)
     }
+
+    data class Schedule(
+        val planName: String,
+        var startHour: Int,
+        var startMinute: Int,
+        var endHour: Int,
+        var endMinute: Int
+    )
 }
+
 
 
 
