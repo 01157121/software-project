@@ -72,12 +72,12 @@ class PlanningActivity : AppCompatActivity() {
             e.printStackTrace()
         }
 
-        val scheduleListContainer = findViewById<LinearLayout>(R.id.schedule_list_container)
+//        val scheduleListContainer = findViewById<LinearLayout>(R.id.schedule_list_container)
 
         // 新增计划
-        addButton.setOnClickListener {
-            showCreatePlan(scheduleListContainer)
-        }
+//        addButton.setOnClickListener {
+//            showCreatePlan(scheduleListContainer)
+//        }
 
         // 設定選單圖示的點擊事件
         val menuIcon: ImageView = findViewById(R.id.menu_icon)
@@ -92,8 +92,8 @@ class PlanningActivity : AppCompatActivity() {
 
         // 定義日期範圍
         val activityDateFormat  = SimpleDateFormat("yyyy/MM/dd", Locale.getDefault())
-        val startDate = activityDateFormat .parse(startDateStr)!! // 開始日期
-        val endDate = activityDateFormat .parse(endDateStr)!!   // 結束日期
+        val startDate = activityDateFormat.parse(startDateStr)!! // 開始日期
+        val endDate = activityDateFormat.parse(endDateStr)!!   // 結束日期
 
         // 設定 Adapter
         val adapter = DatePageAdapter(this, startDate, endDate)

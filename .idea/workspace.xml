@@ -14,13 +14,9 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="e29f201f-91af-40b8-b183-779ee5b41cc2" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/.idea/deploymentTargetSelector.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/project_android/app/src/main/java/com/example/project_android/DatePageAdapter.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/project_android/app/src/main/res/layout/item_date_page.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/caches/deviceStreaming.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/caches/deviceStreaming.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/project_android/app/src/main/java/com/example/project_android/PlanningActivity.kt" beforeDir="false" afterPath="$PROJECT_DIR$/project_android/app/src/main/java/com/example/project_android/PlanningActivity.kt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/project_android/app/src/main/res/layout/activity_planning.xml" beforeDir="false" afterPath="$PROJECT_DIR$/project_android/app/src/main/res/layout/activity_planning.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/project_android/app/src/main/res/layout/item_date_page.xml" beforeDir="false" afterPath="$PROJECT_DIR$/project_android/app/src/main/res/layout/item_date_page.xml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
