@@ -80,7 +80,7 @@ class UserListActivity : AppCompatActivity() {
                 // 加載行程以檢查是否為 createBy 使用者
                 firestore.collection("schedules").document(scheduleId).get()
                     .addOnSuccessListener { scheduleDoc ->
-                        val createBy = scheduleDoc.getString("createBy") ?: ""
+                        val createBy = scheduleDoc.getString("createdBy") ?: ""
 
                         val view = LayoutInflater.from(this).inflate(R.layout.dialog_user_details, null)
                         view.findViewById<TextView>(R.id.user_name).text = user.name

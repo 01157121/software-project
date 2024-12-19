@@ -24,15 +24,9 @@ import java.text.SimpleDateFormat
 import java.util.*
 
 class PlanningActivity : AppCompatActivity() {
-    private lateinit var viewPager: ViewPager2
     private lateinit var scheduleNameTextView: TextView
-    private lateinit var dateRangeTextView: TextView
-    private val dateList: MutableList<Date> = mutableListOf()
     private lateinit var drawerLayout: DrawerLayout
     private lateinit var navigationView: NavigationView
-    private lateinit var addButton: FloatingActionButton
-    private lateinit var addAccountingButton: Button
-    private lateinit var showAccountingResultButton: Button
     private val accountingResults = mutableListOf<Triple<String, String, Double>>() // 用於保存分帳結果
     private lateinit var members: ArrayList<String>
     private val db = FirebaseFirestore.getInstance()
@@ -56,22 +50,11 @@ class PlanningActivity : AppCompatActivity() {
 
         // 初始化 UI 元素
         scheduleNameTextView = findViewById(R.id.schedule_name_text)
-        dateRangeTextView = findViewById(R.id.date_range_text)
         drawerLayout = findViewById(R.id.drawer_layout)
         navigationView = findViewById(R.id.navigation_view)
 //        addButton = findViewById(R.id.add_plan_button)
+        scheduleNameTextView.text = scheduleName
 
-        val dateFormat = SimpleDateFormat("yyyy/MM/dd", Locale.getDefault())
-        try {
-            val startDate = dateFormat.parse(startDateStr)
-            val endDate = dateFormat.parse(endDateStr)
-            generateDateRange(startDate, endDate)
-
-            scheduleNameTextView.text = scheduleName
-            dateRangeTextView.text = "${dateFormat.format(startDate)} - ${dateFormat.format(endDate)}"
-        } catch (e: ParseException) {
-            e.printStackTrace()
-        }
 
 //        val scheduleListContainer = findViewById<LinearLayout>(R.id.schedule_list_container)
 
@@ -89,7 +72,7 @@ class PlanningActivity : AppCompatActivity() {
         // 导航菜单点击事件
         setupNavigationMenu()
 
-        val viewPager: ViewPager2 = findViewById(R.id.view_pager)
+        val viewPager: ViewPager2= findViewById(R.id.view_pager)
 
         // 定義日期範圍
         val activityDateFormat  = SimpleDateFormat("yyyy/MM/dd", Locale.getDefault())
@@ -105,17 +88,6 @@ class PlanningActivity : AppCompatActivity() {
         val todayIndex = ((today.time - startDate.time) / (1000 * 60 * 60 * 24)).toInt()
         if (todayIndex in 0 until adapter.itemCount) {
             viewPager.setCurrentItem(todayIndex, false)
-        }
-    }
-    // 生成日期範圍的函數
-    private fun generateDateRange(startDate: Date?, endDate: Date?) {
-        if (startDate == null || endDate == null) return
-        val calendar = Calendar.getInstance()
-        calendar.time = startDate
-
-        while (calendar.time.before(endDate) || calendar.time == endDate) {
-            dateList.add(calendar.time)
-            calendar.add(Calendar.DAY_OF_YEAR, 1)
         }
     }
 
