@@ -14,12 +14,10 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.viewpager2.widget.ViewPager2
 import com.google.android.gms.tasks.Tasks
-import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.navigation.NavigationView
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
-import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -378,7 +376,7 @@ class PlanningActivity : AppCompatActivity() {
             val resultCard = LinearLayout(this).apply {
                 orientation = LinearLayout.VERTICAL
                 setPadding(16, 16, 16, 16)
-                setBackgroundResource(R.drawable.result_card_background) // 自訂背景
+                setBackgroundResource(R.drawable.item_background) // 自訂背景
                 val params = LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
                     LinearLayout.LayoutParams.WRAP_CONTENT

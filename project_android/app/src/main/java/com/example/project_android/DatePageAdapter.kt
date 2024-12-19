@@ -7,7 +7,9 @@ import android.view.ViewGroup
 import android.widget.Button
 import android.widget.EditText
 import android.widget.LinearLayout
+import android.widget.NumberPicker
 import android.widget.TextView
+import android.widget.Toast
 import androidx.recyclerview.widget.RecyclerView
 import com.example.project_android.R
 import com.google.android.material.floatingactionbutton.FloatingActionButton
@@ -61,26 +63,16 @@ class DatePageAdapter(
     private fun showCreatePlan(selectedDate: Date, holder: DateViewHolder) {
         // 顯示行程創建對話框
         val dialogView = LayoutInflater.from(context).inflate(R.layout.dialog_create_plan, null)
+        val show_current_date_textview: TextView = dialogView.findViewById(R.id.show_date_text)
 
-        val dateButton: Button = dialogView.findViewById(R.id.date_button)
         val startTimeButton: Button = dialogView.findViewById(R.id.start_time_button)
         val endTimeButton: Button = dialogView.findViewById(R.id.end_time_button)
-
         val dateFormat = SimpleDateFormat("yyyy/MM/dd", Locale.getDefault())
-        dateButton.text = dateFormat.format(selectedDate)
-
         var startHour = 0
         var startMinute = 0
         var endHour = 0
         var endMinute = 0
-
-        dateButton.setOnClickListener {
-            // 顯示日期選擇器
-            showDatePickerDialog { selectedDate ->
-                dateButton.text = selectedDate
-            }
-        }
-
+        show_current_date_textview.text = dateFormat.format(selectedDate)
         startTimeButton.setOnClickListener {
             // 顯示時間選擇器
             showTimePickerDialog { hour, minute ->
@@ -103,8 +95,53 @@ class DatePageAdapter(
             .setTitle("新增行程")
             .setView(dialogView)
             .setPositiveButton("新增") { _, _ ->
-                val planName = dialogView.findViewById<EditText>(R.id.plan_name).text.toString()
-                addScheduleToContainer(planName, selectedDate, startHour, startMinute, endHour, endMinute, holder)
+                val isValidTime = (startHour < endHour) || (startHour == endHour && startMinute < endMinute)
+                if (!isValidTime) {
+                    // 如果開始時間不早於結束時間，顯示錯誤訊息
+                    androidx.appcompat.app.AlertDialog.Builder(context)
+                        .setTitle("時間錯誤")
+                        .setMessage("開始時間必須早於結束時間，請重新選擇時間。")
+                        .setPositiveButton("確定", null)
+                        .create()
+                        .show()
+                }
+                else{
+                    val planName = dialogView.findViewById<EditText>(R.id.plan_name).text.toString()
+                    addScheduleToContainer(planName, startHour, startMinute, endHour, endMinute, holder)
+                }
+            }
+            .setNegativeButton("取消", null)
+            .create()
+
+        dialog.show()
+    }
+    private fun showTimePickerDialog(onTimeSelected: (Int, Int) -> Unit) {
+        // 使用自定義的布局
+        val dialogView = LayoutInflater.from(context).inflate(R.layout.dialog_time_picker, null)
+
+        // 獲取滾輪選擇器
+        val hourPicker: NumberPicker = dialogView.findViewById(R.id.hour_picker)
+        val minutePicker: NumberPicker = dialogView.findViewById(R.id.minute_picker)
+
+        // 設置滾輪範圍
+        hourPicker.minValue = 0
+        hourPicker.maxValue = 23
+        minutePicker.minValue = 0
+        minutePicker.maxValue = 59
+
+        // 初始化當前時間
+        val calendar = Calendar.getInstance()
+        hourPicker.value = calendar.get(Calendar.HOUR_OF_DAY)
+        minutePicker.value = calendar.get(Calendar.MINUTE)
+
+        // 顯示自定義對話框
+        val dialog = androidx.appcompat.app.AlertDialog.Builder(context)
+            .setTitle("選擇時間")
+            .setView(dialogView)
+            .setPositiveButton("確定") { _, _ ->
+                val selectedHour = hourPicker.value
+                val selectedMinute = minutePicker.value
+                onTimeSelected(selectedHour, selectedMinute)
             }
             .setNegativeButton("取消", null)
             .create()
@@ -112,33 +149,89 @@ class DatePageAdapter(
         dialog.show()
     }
 
-    private fun showDatePickerDialog(onDateSelected: (String) -> Unit) {
-        val calendar = Calendar.getInstance()
-        DatePickerDialog(context, { _, year, month, day ->
-            onDateSelected("$year/${month + 1}/$day")
-        }, calendar.get(Calendar.YEAR), calendar.get(Calendar.MONTH), calendar.get(Calendar.DAY_OF_MONTH)).show()
-    }
+    private fun addScheduleToContainer(planName: String, startHour: Int, startMinute: Int, endHour: Int, endMinute: Int, holder: DateViewHolder) {
+        // 載入自定義的行程布局
+        val scheduleView = LayoutInflater.from(context).inflate(R.layout.item_schedule, holder.scheduleListContainer, false)
 
-    private fun showTimePickerDialog(onTimeSelected: (Int, Int) -> Unit) {
-        val calendar = Calendar.getInstance()
-        TimePickerDialog(context, { _, hour, minute ->
-            onTimeSelected(hour, minute)
-        }, calendar.get(Calendar.HOUR_OF_DAY), calendar.get(Calendar.MINUTE), true).show()
-    }
+        // 獲取名稱和時間的 TextView
+        val scheduleNameTextView: TextView = scheduleView.findViewById(R.id.schedule_name)
+        val scheduleTimeTextView: TextView = scheduleView.findViewById(R.id.schedule_time)
+        val scheduleContainer: View = scheduleView.findViewById(R.id.schedule_container) // 外層容器
 
-    private fun addScheduleToContainer(planName: String, selectedDate: Date, startHour: Int, startMinute: Int, endHour: Int, endMinute: Int, holder: DateViewHolder) {
-        // 格式化行程資料
-        val scheduleText = "$planName - ${String.format("%02d:%02d", startHour, startMinute)} - ${String.format("%02d:%02d", endHour, endMinute)}"
+        // 設置文字內容
+        scheduleNameTextView.text = planName
+        scheduleTimeTextView.text = String.format("%02d:%02d - %02d:%02d", startHour, startMinute, endHour, endMinute)
 
-        // 創建新的 TextView 動態添加
-        val newScheduleView = TextView(context).apply {
-            text = scheduleText
-            textSize = 16f
-            setPadding(8, 8, 8, 8)
+        // 設置外層容器的點擊事件
+        scheduleContainer.setOnClickListener {
+            showEditTimeDialog(startHour, startMinute, endHour, endMinute) { newStartHour, newStartMinute, newEndHour, newEndMinute ->
+                scheduleTimeTextView.text = String.format("%02d:%02d - %02d:%02d", newStartHour, newStartMinute, newEndHour, newEndMinute)
+            }
         }
 
-        // 將 TextView 添加到行程列表容器中
-        holder.scheduleListContainer.addView(newScheduleView)
+        // 將行程 View 添加到容器中
+        holder.scheduleListContainer.addView(scheduleView)
+    }
+
+    private fun showEditTimeDialog(
+        currentStartHour: Int,
+        currentStartMinute: Int,
+        currentEndHour: Int,
+        currentEndMinute: Int,
+        onTimeUpdated: (Int, Int, Int, Int) -> Unit
+    ) {
+        val dialogView = LayoutInflater.from(context).inflate(R.layout.dialog_edit_time_picker, null)
+        val startHourPicker: NumberPicker = dialogView.findViewById(R.id.start_hour_picker)
+        val startMinutePicker: NumberPicker = dialogView.findViewById(R.id.start_minute_picker)
+        val endHourPicker: NumberPicker = dialogView.findViewById(R.id.end_hour_picker)
+        val endMinutePicker: NumberPicker = dialogView.findViewById(R.id.end_minute_picker)
+
+        startHourPicker.minValue = 0
+        startHourPicker.maxValue = 23
+        startHourPicker.value = currentStartHour
+
+        startMinutePicker.minValue = 0
+        startMinutePicker.maxValue = 59
+        startMinutePicker.value = currentStartMinute
+
+        endHourPicker.minValue = 0
+        endHourPicker.maxValue = 23
+        endHourPicker.value = currentEndHour
+
+        endMinutePicker.minValue = 0
+        endMinutePicker.maxValue = 59
+        endMinutePicker.value = currentEndMinute
+
+        androidx.appcompat.app.AlertDialog.Builder(context)
+            .setTitle("編輯行程時間")
+            .setView(dialogView)
+            .setPositiveButton("確定") { _, _ ->
+
+                val newStartHour = startHourPicker.value
+                val newStartMinute = startMinutePicker.value
+                val newEndHour = endHourPicker.value
+                val newEndMinute = endMinutePicker.value
+                val isValidTime = (newStartHour < newEndHour) || (newStartHour == newEndHour && newStartMinute < newEndMinute)
+                if (!isValidTime) {
+                    // 如果開始時間不早於結束時間，顯示錯誤訊息
+                    androidx.appcompat.app.AlertDialog.Builder(context)
+                        .setTitle("時間錯誤")
+                        .setMessage("開始時間必須早於結束時間，請重新選擇時間。")
+                        .setPositiveButton("確定", null)
+                        .create()
+                        .show()
+                }
+                else{
+                    onTimeUpdated(newStartHour, newStartMinute, newEndHour, newEndMinute)
+                }
+            }
+            .setNegativeButton("取消", null)
+            .create()
+            .show()
+    }
+
+    private fun showToast(message: String) {
+        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
     }
 
     inner class DateViewHolder(view: View) : RecyclerView.ViewHolder(view) {
@@ -147,5 +240,6 @@ class DatePageAdapter(
         val scheduleListContainer: LinearLayout = view.findViewById(R.id.schedule_list_container)
     }
 }
+
 
 

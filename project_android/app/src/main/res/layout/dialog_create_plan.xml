@@ -1,10 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!--<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"-->
-<!--    android:layout_width="match_parent"-->
-<!--    android:layout_height="match_parent">-->
-
-<!--</androidx.constraintlayout.widget.ConstraintLayout>-->
-
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
@@ -17,18 +11,12 @@
         android:layout_height="wrap_content"
         android:hint="行程名稱" />
 
-    <Button
-        android:id="@+id/date_button"
+    <TextView
+        android:id="@+id/show_date_text"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="選擇日期"
-        android:layout_marginTop="16dp" />
-
-    <TextView
-        android:id="@+id/date_button_text"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="未選擇"
+        android:textAlignment="center"
+        android:hint="Date"
         android:textSize="16sp"
         android:layout_marginTop="8dp" />
 
@@ -39,26 +27,11 @@
         android:text="選擇開始時間"
         android:layout_marginTop="16dp" />
 
-    <TextView
-        android:id="@+id/start_time_button_text"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="未選擇"
-        android:textSize="16sp"
-        android:layout_marginTop="8dp" />
     <Button
         android:id="@+id/end_time_button"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="選擇結束時間"
         android:layout_marginTop="16dp" />
-
-    <TextView
-        android:id="@+id/end_time_button_text"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="未選擇"
-        android:textSize="16sp"
-        android:layout_marginTop="8dp" />
 
 </LinearLayout>
