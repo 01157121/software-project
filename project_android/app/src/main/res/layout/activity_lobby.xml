@@ -69,6 +69,8 @@
         android:onClick="showCreateScheduleDialog"/>
     </androidx.constraintlayout.widget.ConstraintLayout>
 
+
+
     <!-- 側邊選單 -->
     <com.google.android.material.navigation.NavigationView
         android:id="@+id/navigation_view"

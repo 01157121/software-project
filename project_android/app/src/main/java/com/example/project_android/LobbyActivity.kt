@@ -27,6 +27,7 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.auth.FirebaseAuth
 import com.bumptech.glide.Glide
 
+
 class LobbyActivity : AppCompatActivity() {
 
     private lateinit var drawerLayout: DrawerLayout
@@ -91,6 +92,7 @@ class LobbyActivity : AppCompatActivity() {
         addButton.setOnClickListener {
             showCreateScheduleDialog()
         }
+
     }
 
     private fun showProfileDialog() {
@@ -224,7 +226,7 @@ class LobbyActivity : AppCompatActivity() {
 
                 val members = memberList.toList()
 
-                if (scheduleName.isBlank() || startDate.isBlank() || endDate.isBlank()) {
+                if (scheduleName.isBlank() || startDate=="未選擇" || endDate=="未選擇") {
 
                     showToast("請填寫完整信息")
                     return@setPositiveButton
@@ -348,7 +350,6 @@ class LobbyActivity : AppCompatActivity() {
                 showToast("行程表添加到用戶資料失敗: ${e.message}")
             }
     }
-
 
 
     private fun showToast(message: String) {

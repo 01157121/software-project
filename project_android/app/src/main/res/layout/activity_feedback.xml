@@ -1,0 +1,81 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <!-- 返回按鈕 -->
+    <ImageButton
+        android:id="@+id/back_button"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:src="@drawable/ic_back"
+        android:contentDescription="返回"
+        android:layout_marginBottom="16dp"
+        android:padding="4dp"
+        android:background="?android:attr/selectableItemBackgroundBorderless"
+        android:scaleType="fitCenter"
+        android:elevation="4dp" />
+
+
+    <!-- 輸入框 -->
+    <EditText
+        android:id="@+id/feedback_edit_text"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:hint="請輸入您的回饋"
+        android:gravity="top|start"
+        android:padding="16dp"
+        android:background="@drawable/feedback_edittext_background" />
+
+    <!-- 添加媒體 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:padding="16dp">
+
+        <ImageButton
+            android:id="@+id/add_image_button"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:src="@drawable/ic_add_image"
+            android:contentDescription="加入圖片"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+        android:scaleType="fitCenter"
+        android:adjustViewBounds="true"
+        android:padding="4dp" />
+
+        <ImageButton
+            android:id="@+id/add_video_button"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:src="@drawable/ic_add_video"
+            android:contentDescription="加入影片"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:scaleType="fitCenter"
+            android:adjustViewBounds="true"
+            android:padding="4dp" />
+
+    </LinearLayout>
+
+    <!-- 預覽區 -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/preview_recycler_view"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp"
+        android:scrollbars="vertical" />
+
+    <!-- 確認送出按鈕 -->
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/submit_feedback_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="end"
+        android:src="@drawable/ic_check"
+        android:contentDescription="確認送出" />
+</LinearLayout>

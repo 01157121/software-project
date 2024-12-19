@@ -25,6 +25,7 @@
         <activity android:name=".LoginActivity"></activity>
         <activity android:name=".RegisterActivity"></activity>
         <activity android:name=".UserListActivity"></activity>
+        <activity android:name=".FeedbackActivity"></activity>
         <activity
             android:name=".LobbyActivity"
             android:label="@string/app_name">

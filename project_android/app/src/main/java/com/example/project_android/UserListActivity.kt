@@ -127,6 +127,7 @@ class UserListActivity : AppCompatActivity() {
             transaction.delete(userScheduleRef)
         }.addOnSuccessListener {
             Toast.makeText(this, "旅伴已成功移除", Toast.LENGTH_SHORT).show()
+            fetchUserList(scheduleId)
         }.addOnFailureListener { e ->
             Toast.makeText(this, "移除旅伴失敗：${e.message}", Toast.LENGTH_SHORT).show()
         }

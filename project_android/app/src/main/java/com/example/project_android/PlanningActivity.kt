@@ -27,8 +27,10 @@ class PlanningActivity : AppCompatActivity() {
     private lateinit var navigationView: NavigationView
     private val accountingResults = mutableListOf<Triple<String, String, Double>>() // 用於保存分帳結果
     private lateinit var members: ArrayList<String>
+    private val auth = FirebaseAuth.getInstance()
     private val db = FirebaseFirestore.getInstance()
     private lateinit var scheduleId: String
+    private lateinit var feedbackButton: FloatingActionButton // 回饋按鈕
     var startHour: Int = 0
     var startMinute: Int = 0
     var endHour: Int = 0
@@ -87,6 +89,11 @@ class PlanningActivity : AppCompatActivity() {
         if (todayIndex in 0 until adapter.itemCount) {
             viewPager.setCurrentItem(todayIndex, false)
         }
+        // 回饋功能
+        feedbackButton = findViewById(R.id.feedback_button)
+        feedbackButton.visibility = View.GONE // 預設隱藏
+
+        checkIfFeedbackNeeded()
     }
 
     private fun showCreatePlan(container: LinearLayout) {
@@ -196,6 +203,41 @@ class PlanningActivity : AppCompatActivity() {
         val intent = Intent(this, LobbyActivity::class.java)
         startActivity(intent)
         finish()
+    }
+
+    private fun checkIfFeedbackNeeded() {
+        val currentDate = Calendar.getInstance().time
+        val userId = auth.currentUser?.uid ?: return
+
+        db.collection("schedules")
+            .whereArrayContains("collaborators", userId)
+            .get()
+            .addOnSuccessListener { querySnapshot ->
+                querySnapshot.documents.forEach { document ->
+                    val endDateStr = document.getString("endDate") ?: return@forEach
+
+                    // 添加日期解析的異常處理
+                    val endDate = try {
+                        SimpleDateFormat("yyyy/MM/dd", Locale.getDefault()).parse(endDateStr)
+                    } catch (e: ParseException) {
+                        e.printStackTrace()
+                        null // 如果解析失敗，返回 null
+                    }
+
+                    if (endDate != null && currentDate.after(endDate)) {
+                        feedbackButton.visibility = View.VISIBLE
+                        feedbackButton.setOnClickListener {
+                            val scheduleId = document.id
+                            val intent = Intent(this, FeedbackActivity::class.java)
+                            intent.putExtra("SCHEDULE_ID", scheduleId)
+                            startActivity(intent)
+                        }
+                    }
+                }
+            }
+            .addOnFailureListener {
+                showToast("無法檢查回饋狀態")
+            }
     }
 
     private fun addAccounting() {
