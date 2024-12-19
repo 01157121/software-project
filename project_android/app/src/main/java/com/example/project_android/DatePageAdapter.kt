@@ -1,3 +1,4 @@
+import android.annotation.SuppressLint
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
 import android.content.Context
@@ -15,11 +16,18 @@ import com.example.project_android.R
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import java.text.SimpleDateFormat
 import java.util.*
-
+data class Schedule(
+    val planName: String,
+    var startHour: Int,
+    var startMinute: Int,
+    var endHour: Int,
+    var endMinute: Int
+)
 class DatePageAdapter(
     private val context: Context,
     private val startDate: Date,
-    private val endDate: Date
+    private val endDate: Date,
+    private val schedules: MutableList<Schedule> = mutableListOf()
 ) : RecyclerView.Adapter<DatePageAdapter.DateViewHolder>() {
 
     private val adapterDateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
@@ -149,28 +157,65 @@ class DatePageAdapter(
         dialog.show()
     }
 
-    private fun addScheduleToContainer(planName: String, startHour: Int, startMinute: Int, endHour: Int, endMinute: Int, holder: DateViewHolder) {
-        // 載入自定義的行程布局
-        val scheduleView = LayoutInflater.from(context).inflate(R.layout.item_schedule, holder.scheduleListContainer, false)
+    private fun addScheduleToContainer(
+        planName: String,
+        startHour: Int,
+        startMinute: Int,
+        endHour: Int,
+        endMinute: Int,
+        holder: DateViewHolder
+    ) {
+        // 新增行程到清單
+        val newSchedule = Schedule(planName, startHour, startMinute, endHour, endMinute)
+        schedules.add(newSchedule)
 
-        // 獲取名稱和時間的 TextView
-        val scheduleNameTextView: TextView = scheduleView.findViewById(R.id.schedule_name)
-        val scheduleTimeTextView: TextView = scheduleView.findViewById(R.id.schedule_time)
-        val scheduleContainer: View = scheduleView.findViewById(R.id.schedule_container) // 外層容器
+        // 按開始時間排序
+        schedules.sortWith(compareBy({ it.startHour }, { it.startMinute }))
 
-        // 設置文字內容
-        scheduleNameTextView.text = planName
-        scheduleTimeTextView.text = String.format("%02d:%02d - %02d:%02d", startHour, startMinute, endHour, endMinute)
+        // 重新繪製行程列表
+        redrawSchedules(holder)
+    }
 
-        // 設置外層容器的點擊事件
-        scheduleContainer.setOnClickListener {
-            showEditTimeDialog(startHour, startMinute, endHour, endMinute) { newStartHour, newStartMinute, newEndHour, newEndMinute ->
-                scheduleTimeTextView.text = String.format("%02d:%02d - %02d:%02d", newStartHour, newStartMinute, newEndHour, newEndMinute)
+    @SuppressLint("DefaultLocale")
+    private fun redrawSchedules(holder: DateViewHolder) {
+        // 清空容器
+        holder.scheduleListContainer.removeAllViews()
+
+        // 根據排序後的行程重新繪製
+        for (schedule in schedules) {
+            val scheduleView = LayoutInflater.from(context).inflate(R.layout.item_schedule, holder.scheduleListContainer, false)
+
+            val scheduleNameTextView: TextView = scheduleView.findViewById(R.id.schedule_name)
+            val scheduleTimeTextView: TextView = scheduleView.findViewById(R.id.schedule_time)
+            val scheduleContainer: View = scheduleView.findViewById(R.id.schedule_container)
+
+            scheduleNameTextView.text = schedule.planName
+            scheduleTimeTextView.text = String.format(
+                "%02d:%02d - %02d:%02d",
+                schedule.startHour,
+                schedule.startMinute,
+                schedule.endHour,
+                schedule.endMinute
+            )
+
+            scheduleContainer.setOnClickListener {
+                showEditTimeDialog(
+                    schedule.startHour, schedule.startMinute,
+                    schedule.endHour, schedule.endMinute
+                ) { newStartHour, newStartMinute, newEndHour, newEndMinute ->
+                    schedule.startHour = newStartHour
+                    schedule.startMinute = newStartMinute
+                    schedule.endHour = newEndHour
+                    schedule.endMinute = newEndMinute
+
+                    // 重新排序和繪製
+                    schedules.sortWith(compareBy({ it.startHour }, { it.startMinute }))
+                    redrawSchedules(holder)
+                }
             }
-        }
 
-        // 將行程 View 添加到容器中
-        holder.scheduleListContainer.addView(scheduleView)
+            holder.scheduleListContainer.addView(scheduleView)
+        }
     }
 
     private fun showEditTimeDialog(
