@@ -15,10 +15,10 @@
         android:layout_marginBottom="8dp" />
 
     <EditText
-        android:id="@+id/member_name_edit_text"
+        android:id="@+id/member_email_edit_text"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="成員名字"
+        android:hint="email"
         android:inputType="textPersonName" />
 
 </LinearLayout>
