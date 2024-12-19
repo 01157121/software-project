@@ -4,6 +4,7 @@ import android.app.AlertDialog
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
 import android.content.Intent
+import android.graphics.Typeface
 import android.os.Bundle
 import android.view.Gravity
 import android.view.View
@@ -209,7 +210,6 @@ class PlanningActivity : AppCompatActivity() {
 
     private fun addAccounting() {
         val dialogView = layoutInflater.inflate(R.layout.dialog_split_bill, null)
-
         val dialog = AlertDialog.Builder(this)
             .setTitle("分帳")
             .setView(dialogView)
@@ -244,6 +244,9 @@ class PlanningActivity : AppCompatActivity() {
         }
 
         dialogView.findViewById<Button>(R.id.submit_button).setOnClickListener {
+
+            val accountingNameInput = dialogView.findViewById<EditText>(R.id.accounting_name)
+            val accountingName = accountingNameInput.text.toString().takeIf { it.isNotBlank() } ?: "分帳項目"
             val selectedWhoPaidPosition = whoPaidList.checkedItemPosition
             if (selectedWhoPaidPosition == -1) {
                 Toast.makeText(this, "請選擇付錢者", Toast.LENGTH_SHORT).show()
@@ -285,7 +288,7 @@ class PlanningActivity : AppCompatActivity() {
             // 更新分帳結果
             accountingResults.clear()
             val accountingResultId = generateUniqueAccountingResultId()
-            saveAccountingResultToFirestore(scheduleId,accountingResultId,newResults)
+            saveAccountingResultToFirestore(scheduleId,accountingResultId,accountingName,newResults)
             //accountingResults.addAll(newResults)
 
             Toast.makeText(this, "分帳結果已保存", Toast.LENGTH_SHORT).show()
@@ -317,13 +320,12 @@ class PlanningActivity : AppCompatActivity() {
                     return@addOnSuccessListener
                 }
 
-                val allResults = mutableListOf<Map<String, Any>>()
+                val allResults = mutableListOf<Pair<String, List<Map<String, Any>>>>()
 
                 for (document in querySnapshot.documents) {
-                    val results = document.get("results") as? List<Map<String, Any>>
-                    if (results != null) {
-                        allResults.addAll(results)
-                    }
+                    val title = document.getString("title") ?: "無標題"
+                    val results = document.get("results") as? List<Map<String, Any>> ?: emptyList()
+                    allResults.add(Pair(title, results))
                 }
 
                 // 顯示對話框
@@ -334,24 +336,87 @@ class PlanningActivity : AppCompatActivity() {
             }
     }
     //用簡單dialog顯示分帳紀錄
-    private fun showAccountingResultDialog(results: List<Map<String, Any>>) {
-        // 加載自定義對話框佈局
+    private fun showAccountingResultDialog(results: List<Pair<String, List<Map<String, Any>>>>) {
         val dialogView = layoutInflater.inflate(R.layout.dialog_accounting_results, null)
         val resultsContainer = dialogView.findViewById<LinearLayout>(R.id.accounting_results_container)
         val closeButton = dialogView.findViewById<Button>(R.id.close_button)
 
-        // 動態生成每個分帳結果
-        results.forEach { result ->
-            val debtor = result["debtor"] as? String ?: "未知"
-            val creditor = result["creditor"] as? String ?: "未知"
-            val amount = result["amount"] as? Double ?: 0.0
+        val balanceMap = mutableMapOf<String, Double>() // 用於記錄每個人的最終欠款/付款情況
 
-            val resultView = TextView(this).apply {
-                text = "欠款者: $debtor\n付款者: $creditor\n金額: $amount\n"
-                textSize = 16f
-                setPadding(8, 8, 8, 8)
+        // 動態生成每個分帳結果
+        results.forEach { (title, resultList) ->
+            // 計算總金額
+            val totalAmount = resultList.sumOf { (it["amount"] as? Double) ?: 0.0 }
+
+            // 創建外框容器
+            val resultCard = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                setPadding(16, 16, 16, 16)
+                setBackgroundResource(R.drawable.result_card_background) // 自訂背景
+                val params = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                ).apply {
+                    setMargins(8, 8, 8, 8)
+                }
+                layoutParams = params
             }
-            resultsContainer.addView(resultView)
+
+            // 顯示分帳標題及總金額
+            val titleView = TextView(this).apply {
+                text = "$title (總金額: $totalAmount)"
+                textSize = 18f
+                setPadding(8, 8, 8, 8)
+                setTypeface(null, Typeface.BOLD)
+            }
+            resultCard.addView(titleView)
+
+            // 顯示該標題下的詳細內容
+            resultList.forEach { result ->
+                val debtor = result["debtor"] as? String ?: "未知"
+                val creditor = result["creditor"] as? String ?: "未知"
+                val amount = result["amount"] as? Double ?: 0.0
+
+                // 略過欠款者與付款者相同的情況
+                if (debtor == creditor) return@forEach
+
+                // 記錄欠款與付款數據
+                balanceMap[debtor] = (balanceMap[debtor] ?: 0.0) - amount
+                balanceMap[creditor] = (balanceMap[creditor] ?: 0.0) + amount
+
+                val resultView = TextView(this).apply {
+                    text = "欠款者: $debtor\n付款者: $creditor\n金額: $amount"
+                    textSize = 16f
+                    setPadding(8, 8, 8, 8)
+                }
+                resultCard.addView(resultView)
+            }
+
+            // 添加外框容器到結果顯示區域
+            resultsContainer.addView(resultCard)
+        }
+
+        // 計算整合結果
+        val finalResults = balanceMap.filterValues { it != 0.0 }
+
+        // 添加整合結果標題
+        val summaryTitleView = TextView(this).apply {
+            text = "整合結果"
+            textSize = 20f
+            setPadding(16, 16, 16, 8)
+            setTypeface(null, Typeface.BOLD)
+        }
+        resultsContainer.addView(summaryTitleView)
+
+        // 顯示整合後的每人結餘
+        finalResults.forEach { (person, balance) ->
+            val summaryView = TextView(this).apply {
+                val balanceText = if (balance > 0) "應收款: $balance" else "應付款: ${-balance}"
+                text = "$person: $balanceText"
+                textSize = 16f
+                setPadding(16, 8, 16, 8)
+            }
+            resultsContainer.addView(summaryView)
         }
 
         // 創建並顯示對話框
@@ -367,7 +432,7 @@ class PlanningActivity : AppCompatActivity() {
         dialog.show()
     }
 
-    private fun saveAccountingResultToFirestore(scheduleId: String, AccountingResultId: String, results: List<Map<String, Any>>) {
+    private fun saveAccountingResultToFirestore(scheduleId: String, AccountingResultId: String,accounting_title: String, results: List<Map<String, Any>>) {
         val currentUserId = FirebaseAuth.getInstance().currentUser?.uid
         if (currentUserId == null) {
             showToast("用戶未登入")
@@ -375,6 +440,7 @@ class PlanningActivity : AppCompatActivity() {
         }
 
         val accountingData = hashMapOf(
+            "title" to accounting_title, // 新增的標題欄位
             "results" to results
         )
         db.collection("schedules")
