@@ -12,9 +12,11 @@ import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.viewpager2.widget.ViewPager2
+import com.google.android.gms.tasks.Tasks
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.navigation.NavigationView
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
 import java.text.ParseException
 import java.text.SimpleDateFormat
@@ -47,7 +49,6 @@ class PlanningActivity : AppCompatActivity() {
         val scheduleName = intent.getStringExtra("SCHEDULE_NAME")
         val startDateStr = intent.getStringExtra("START_DATE")
         val endDateStr = intent.getStringExtra("END_DATE")
-        members = intent.getStringArrayListExtra("MEMBERS_LIST")?: arrayListOf()
         scheduleId = intent.getStringExtra("SCHEDULE_ID") ?: throw IllegalArgumentException("SCHEDULE_ID is required")
 
 
@@ -209,13 +210,50 @@ class PlanningActivity : AppCompatActivity() {
     }
 
     private fun addAccounting() {
+        members = ArrayList()
         val dialogView = layoutInflater.inflate(R.layout.dialog_split_bill, null)
         val dialog = AlertDialog.Builder(this)
             .setTitle("分帳")
             .setView(dialogView)
             .create()
 
-        // 設置 Adapter 給付款者的 ListView
+        db.collection("schedules")
+            .document(scheduleId)
+            .get()
+            .addOnSuccessListener { scheduleDocument ->
+                if (scheduleDocument.exists()) {
+                    // 獲取 collaborators 的 ID 清單
+                    val collaborators = scheduleDocument.get("collaborators") as? List<String> ?: emptyList()
+
+                    // 查找每個 collaborator 的 username
+                    val tasks = collaborators.map { userId ->
+                        db.collection("users").document(userId).get()
+                    }
+
+                    Tasks.whenAllSuccess<DocumentSnapshot>(tasks).addOnSuccessListener { documents ->
+                        documents.forEach { userDocument ->
+                            val username = userDocument.getString("username") ?: "未知用戶"
+                            members.add(username) // 添加到 members 清單
+                        }
+                        setupAccountingDialog(dialog, dialogView)
+                    }.addOnFailureListener { e ->
+                        showToast("無法獲取成員資料：${e.message}")
+                    }
+                } else {
+                    showToast("無法找到指定的行程")
+                }
+            }
+            .addOnFailureListener { e ->
+                showToast("讀取行程失敗：${e.message}")
+            }
+
+
+
+        dialog.show()
+
+    }
+    private fun setupAccountingDialog(dialog: AlertDialog, dialogView: View) {
+
         val filteredMembers = members?.filter { it.isNotBlank() } ?: arrayListOf()
         val singleChoiceAdapter = ArrayAdapter(
             this,
@@ -296,9 +334,6 @@ class PlanningActivity : AppCompatActivity() {
             dialog.dismiss()
 
         }
-
-        dialog.show()
-
     }
     //把資料修改成firebase可儲存的格式
     private fun convertToMap(triple: Triple<String, String, Double>):Map<String, Any> {

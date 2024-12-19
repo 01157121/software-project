@@ -37,6 +37,7 @@ class LobbyActivity : AppCompatActivity() {
     private lateinit var endDateButton: Button
     private val db = FirebaseFirestore.getInstance()
     private val auth = FirebaseAuth.getInstance()
+    private val allUserIds = mutableListOf<String>()
 
     @SuppressLint("MissingInflatedId")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -49,6 +50,9 @@ class LobbyActivity : AppCompatActivity() {
                 if (document != null) {
                     val username = document.getString("username")
                     usernameTextView.text = username ?: "使用者"
+                    FirebaseAuth.getInstance().currentUser?.uid?.let { uid ->
+                        allUserIds.add(uid)
+                    }
                 }
             }.addOnFailureListener {
                 usernameTextView.text = "載入失敗"
@@ -146,12 +150,14 @@ class LobbyActivity : AppCompatActivity() {
         )
     }
 
+
+
     // 顯示創建行程表的對話框
     private fun showCreateScheduleDialog() {
         val dialogView = layoutInflater.inflate(R.layout.dialog_create_schedule, null)
         val startDateButton: View = dialogView.findViewById(R.id.start_date_button)
         val endDateButton: View = dialogView.findViewById(R.id.end_date_button)
-        val AddNewMenberButton: View = dialogView.findViewById(R.id.AddNewMenber) //新增成員按鈕
+        val AddNewMemberButton: View = dialogView.findViewById(R.id.AddNewMenber) //新增成員按鈕
         // 初始化 Spinner 的邏輯
         val memberSpinner = dialogView.findViewById<Spinner>(R.id.member_spinner)
         // 預設成員列表
@@ -177,20 +183,37 @@ class LobbyActivity : AppCompatActivity() {
             }
         }
         //讓新增成員按鈕
-        AddNewMenberButton.setOnClickListener {
-            showAddMemberDialog { memberName ->
-                // 處理新增的成員名稱（例如，保存到列表或顯示）
-                // 同時更新下拉式選單
-                if (memberList.contains(memberName)) {
-                    Toast.makeText(this, "該成員已存在，無法重複新增", Toast.LENGTH_SHORT).show()
-                } else {
-                    // 新增成員到列表並更新 Adapter
-                    memberList.add(memberName)
-                    adapter.notifyDataSetChanged()
-                    Toast.makeText(this, "新增成員：$memberName", Toast.LENGTH_SHORT).show()
-                }
+        AddNewMemberButton.setOnClickListener {
+            showAddMemberDialog { email ->
+                // 從 Firestore 查詢 email
+                db.collection("users")
+                    .whereEqualTo("email", email)
+                    .get()
+                    .addOnSuccessListener { querySnapshot ->
+                        if (querySnapshot.isEmpty) {
+                            Toast.makeText(this, "未找到該電子郵件對應的用戶", Toast.LENGTH_SHORT).show()
+                        } else {
+                            val userDocument = querySnapshot.documents[0]
+                            val username = userDocument.getString("username") ?: "Unknown"
+                            val uid = userDocument.id // 獲取 UID
+                            // 檢查是否已存在於下拉式選單中
+                            if (memberList.contains(username)) {
+                                Toast.makeText(this, "該成員已存在，無法重複新增", Toast.LENGTH_SHORT).show()
+                            } else {
+                                // 新增到成員列表並更新 Adapter
+                                memberList.add(username)
+                                allUserIds.add(uid) // 將 UID 添加到 allUserIds
+                                adapter.notifyDataSetChanged()
+                                Toast.makeText(this, "新增成員：$username", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    }
+                    .addOnFailureListener { exception ->
+                        Toast.makeText(this, "查詢失敗：${exception.message}", Toast.LENGTH_SHORT).show()
+                    }
             }
         }
+
         val dialog = androidx.appcompat.app.AlertDialog.Builder(this)
             .setTitle("創建行程表")
             .setView(dialogView)
@@ -218,7 +241,6 @@ class LobbyActivity : AppCompatActivity() {
                 intent.putExtra("START_DATE", startDate)
                 intent.putExtra("END_DATE", endDate)
                 intent.putExtra("SCHEDULE_ID", scheduleId)
-                intent.putStringArrayListExtra("MEMBERS_LIST", ArrayList(members))
                 startActivity(intent)
             }
             .setNegativeButton("取消", null)
@@ -260,17 +282,17 @@ class LobbyActivity : AppCompatActivity() {
     //fun 來跳出新增成員的dialog
     private fun showAddMemberDialog(onMemberAdded: (String) -> Unit) {
         val dialogView = layoutInflater.inflate(R.layout.dialog_add_member, null)
-        val memberNameEditText = dialogView.findViewById<EditText>(R.id.member_name_edit_text)
+        val emailEditText = dialogView.findViewById<EditText>(R.id.member_email_edit_text)
 
         val dialog = androidx.appcompat.app.AlertDialog.Builder(this)
             .setTitle("新增成員")
             .setView(dialogView)
             .setPositiveButton("確認") { _, _ ->
-                val memberName = memberNameEditText.text.toString()
-                if (memberName.isNotBlank()) {
-                    onMemberAdded(memberName)
+                val email = emailEditText.text.toString()
+                if (email.isNotBlank()) {
+                    onMemberAdded(email)
                 } else {
-                    Toast.makeText(this, "請輸入有效的名字", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, "請輸入有效的電子郵件", Toast.LENGTH_SHORT).show()
                 }
             }
             .setNegativeButton("取消", null)
@@ -280,25 +302,20 @@ class LobbyActivity : AppCompatActivity() {
 
 
     private fun saveScheduleToFirestore(scheduleId: String, name: String, startDate: String, endDate: String) {
-        val currentUserId = FirebaseAuth.getInstance().currentUser?.uid
-        if (currentUserId == null) {
-            showToast("用戶未登入")
-            return
-        }
 
         val scheduleData = hashMapOf(
             "scheduleId" to scheduleId,
             "name" to name,
             "startDate" to startDate,
             "endDate" to endDate,
-            "createdBy" to currentUserId,
-            "collaborators" to listOf(currentUserId) // 默認創建者為唯一編輯者
+            "createdBy" to allUserIds[0],
+            "collaborators" to allUserIds // 默認創建者為唯一編輯者
         )
         db.collection("schedules")
             .document(scheduleId)
             .set(scheduleData)
             .addOnSuccessListener {
-                saveScheduleToUserCollection(currentUserId, scheduleId)
+                saveScheduleToUsers(allUserIds, scheduleId)
 
             }
             .addOnFailureListener { e ->
@@ -306,24 +323,32 @@ class LobbyActivity : AppCompatActivity() {
             }
     }
 
-    private fun saveScheduleToUserCollection(userId: String, scheduleId: String) {
+    private fun saveScheduleToUsers(userIds: List<String>, scheduleId: String) {
         val userScheduleData = hashMapOf(
             "scheduleId" to scheduleId
         )
 
         val db = FirebaseFirestore.getInstance()
-        db.collection("users")
-            .document(userId)
-            .collection("schedules")
-            .document(scheduleId) // 使用行程表 ID 作為文檔 ID
-            .set(userScheduleData)
+        val batch = db.batch() // 使用批次操作
+
+        userIds.forEach { userId ->
+            val userScheduleRef = db.collection("users")
+                .document(userId)
+                .collection("schedules")
+                .document(scheduleId) // 使用行程表 ID 作為文檔 ID
+            batch.set(userScheduleRef, userScheduleData) // 將操作添加到批次
+        }
+
+        // 提交批次操作
+        batch.commit()
             .addOnSuccessListener {
-                showToast("行程表已成功添加！")
+                showToast("行程表已成功添加到所有用戶！")
             }
             .addOnFailureListener { e ->
                 showToast("行程表添加到用戶資料失敗: ${e.message}")
             }
     }
+
 
 
     private fun showToast(message: String) {
