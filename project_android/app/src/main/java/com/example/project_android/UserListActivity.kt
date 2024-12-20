@@ -3,6 +3,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.EditText
+import android.widget.ImageButton
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
@@ -49,6 +50,11 @@ class UserListActivity : AppCompatActivity() {
             } ?: run {
                 Toast.makeText(this, "Invalid schedule ID", Toast.LENGTH_SHORT).show()
             }
+        }
+
+        // 返回按鈕
+        findViewById<ImageButton>(R.id.back_button).setOnClickListener {
+            finish()
         }
 
     }
