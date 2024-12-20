@@ -33,7 +33,7 @@ class PlanningActivity : AppCompatActivity() {
     private val db = FirebaseFirestore.getInstance()
     private lateinit var scheduleId: String
     private lateinit var feedbackButton: FloatingActionButton // 回饋按鈕
-
+    private var accountingResultDialog: AlertDialog? = null
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_planning)
@@ -300,10 +300,7 @@ class PlanningActivity : AppCompatActivity() {
             .collection("accounting_results")
             .get()
             .addOnSuccessListener { querySnapshot ->
-                if (querySnapshot.isEmpty) {
-                    showToast("沒有找到任何分帳紀錄")
-                    return@addOnSuccessListener
-                }
+
 
                 val allResults = mutableListOf<Pair<String, List<Map<String, Any>>>>()
 
@@ -322,22 +319,25 @@ class PlanningActivity : AppCompatActivity() {
     }
     //用簡單dialog顯示分帳紀錄
     private fun showAccountingResultDialog(results: List<Pair<String, List<Map<String, Any>>>>) {
+        // 如果舊對話框存在，先關閉
+        accountingResultDialog?.dismiss()
+        accountingResultDialog = null
+        if (results.isEmpty()) {
+            showToast("沒有找到任何分帳紀錄")
+            return
+        }
         val dialogView = layoutInflater.inflate(R.layout.dialog_accounting_results, null)
         val resultsContainer = dialogView.findViewById<LinearLayout>(R.id.accounting_results_container)
         val closeButton = dialogView.findViewById<Button>(R.id.close_button)
 
         val balanceMap = mutableMapOf<String, Double>() // 用於記錄每個人的最終欠款/付款情況
 
-        // 動態生成每個分帳結果
         results.forEach { (title, resultList) ->
-            // 計算總金額
             val totalAmount = resultList.sumOf { (it["amount"] as? Double) ?: 0.0 }
-
-            // 創建外框容器
             val resultCard = LinearLayout(this).apply {
                 orientation = LinearLayout.VERTICAL
                 setPadding(16, 16, 16, 16)
-                setBackgroundResource(R.drawable.item_background) // 自訂背景
+                setBackgroundResource(R.drawable.item_background)
                 val params = LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
                     LinearLayout.LayoutParams.WRAP_CONTENT
@@ -347,7 +347,6 @@ class PlanningActivity : AppCompatActivity() {
                 layoutParams = params
             }
 
-            // 顯示分帳標題及總金額
             val titleView = TextView(this).apply {
                 text = "$title (總金額: $totalAmount)"
                 textSize = 18f
@@ -356,19 +355,13 @@ class PlanningActivity : AppCompatActivity() {
             }
             resultCard.addView(titleView)
 
-            // 顯示該標題下的詳細內容
             resultList.forEach { result ->
                 val debtor = result["debtor"] as? String ?: "未知"
                 val creditor = result["creditor"] as? String ?: "未知"
                 val amount = result["amount"] as? Double ?: 0.0
-
-                // 略過欠款者與付款者相同的情況
                 if (debtor == creditor) return@forEach
-
-                // 記錄欠款與付款數據
                 balanceMap[debtor] = (balanceMap[debtor] ?: 0.0) - amount
                 balanceMap[creditor] = (balanceMap[creditor] ?: 0.0) + amount
-
                 val resultView = TextView(this).apply {
                     text = "欠款者: $debtor\n付款者: $creditor\n金額: $amount"
                     textSize = 16f
@@ -377,14 +370,22 @@ class PlanningActivity : AppCompatActivity() {
                 resultCard.addView(resultView)
             }
 
-            // 添加外框容器到結果顯示區域
+            // 添加長按事件
+            resultCard.setOnLongClickListener {
+                AlertDialog.Builder(this)
+                    .setTitle("刪除分帳紀錄")
+                    .setMessage("確定要刪除分帳紀錄 \"$title\" 嗎？")
+                    .setPositiveButton("刪除") { _, _ ->
+                        deleteAccountingResultFromFirestore(scheduleId, title)
+                    }
+                    .setNegativeButton("取消", null)
+                    .show()
+                true
+            }
+
             resultsContainer.addView(resultCard)
         }
 
-        // 計算整合結果
-        val finalResults = balanceMap.filterValues { it != 0.0 }
-
-        // 添加整合結果標題
         val summaryTitleView = TextView(this).apply {
             text = "整合結果"
             textSize = 20f
@@ -393,7 +394,7 @@ class PlanningActivity : AppCompatActivity() {
         }
         resultsContainer.addView(summaryTitleView)
 
-        // 顯示整合後的每人結餘
+        val finalResults = balanceMap.filterValues { it != 0.0 }
         finalResults.forEach { (person, balance) ->
             val summaryView = TextView(this).apply {
                 val balanceText = if (balance > 0) "應收款: $balance" else "應付款: ${-balance}"
@@ -404,18 +405,46 @@ class PlanningActivity : AppCompatActivity() {
             resultsContainer.addView(summaryView)
         }
 
-        // 創建並顯示對話框
         val dialog = AlertDialog.Builder(this)
             .setView(dialogView)
             .create()
 
-        // 設置關閉按鈕邏輯
         closeButton.setOnClickListener {
             dialog.dismiss()
         }
 
         dialog.show()
+        accountingResultDialog = dialog // 將新的對話框存儲起來
     }
+    private fun deleteAccountingResultFromFirestore(scheduleId: String, accountingTitle: String) {
+        db.collection("schedules")
+            .document(scheduleId)
+            .collection("accounting_results")
+            .whereEqualTo("title", accountingTitle)
+            .get()
+            .addOnSuccessListener { querySnapshot ->
+                if (querySnapshot.isEmpty) {
+                    showToast("找不到分帳紀錄")
+                    return@addOnSuccessListener
+                }
+
+                for (document in querySnapshot.documents) {
+                    document.reference.delete()
+                        .addOnSuccessListener {
+                            showToast("分帳紀錄已刪除")
+                            // 重新載入分帳結果
+                            showAccountingResult()
+                        }
+                        .addOnFailureListener { e ->
+                            showToast("刪除分帳紀錄失敗: ${e.message}")
+                        }
+                }
+            }
+            .addOnFailureListener { e ->
+                showToast("無法查詢分帳紀錄: ${e.message}")
+            }
+    }
+
 
     private fun saveAccountingResultToFirestore(scheduleId: String, AccountingResultId: String,accounting_title: String, results: List<Map<String, Any>>) {
         val currentUserId = FirebaseAuth.getInstance().currentUser?.uid
