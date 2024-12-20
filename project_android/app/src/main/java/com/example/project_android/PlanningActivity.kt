@@ -134,7 +134,8 @@ class PlanningActivity : AppCompatActivity() {
             .get()
             .addOnSuccessListener { querySnapshot ->
                 querySnapshot.documents.forEach { document ->
-                    val endDateStr = document.getString("endDate") ?: return@forEach
+//                    val endDateStr = document.getString("endDate") ?: return@forEach
+                    val endDateStr = intent.getStringExtra("END_DATE")
 
                     // 添加日期解析的異常處理
                     val endDate = try {
@@ -144,15 +145,23 @@ class PlanningActivity : AppCompatActivity() {
                         null // 如果解析失敗，返回 null
                     }
 
-                    if (endDate != null && currentDate.after(endDate)) {
-                        //Toast.makeText(this, "目前日期: $currentDate\n結束日期: $endDate", Toast.LENGTH_SHORT).show()
-                        feedbackButton.visibility = View.VISIBLE
+                    if (endDate != null) {
+                        // 使用 Calendar 增加一天
+                        val calendar = Calendar.getInstance()
+                        calendar.time = endDate
+                        calendar.add(Calendar.DAY_OF_YEAR, 1) // 增加一天
+                        val updatedEndDate = calendar.time
 
-                        feedbackButton.setOnClickListener {
-                            val scheduleId = document.id
-                            val intent = Intent(this, FeedbackActivity::class.java)
-                            intent.putExtra("SCHEDULE_ID", scheduleId)
-                            startActivity(intent)
+                        // 比較當前日期與修改後的結束日期
+                        if (currentDate.after(updatedEndDate)) {
+                            feedbackButton.visibility = View.VISIBLE
+
+                            feedbackButton.setOnClickListener {
+                                val scheduleId = document.id
+                                val intent = Intent(this, FeedbackActivity::class.java)
+                                intent.putExtra("SCHEDULE_ID", scheduleId)
+                                startActivity(intent)
+                            }
                         }
                     }
                 }
