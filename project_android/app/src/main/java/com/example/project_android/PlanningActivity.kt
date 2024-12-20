@@ -112,6 +112,7 @@ class PlanningActivity : AppCompatActivity() {
 
     private fun saveSchedule() {
         // 保存行程
+
     }
 
     private fun exportSchedule() {
@@ -144,7 +145,9 @@ class PlanningActivity : AppCompatActivity() {
                     }
 
                     if (endDate != null && currentDate.after(endDate)) {
+                        //Toast.makeText(this, "目前日期: $currentDate\n結束日期: $endDate", Toast.LENGTH_SHORT).show()
                         feedbackButton.visibility = View.VISIBLE
+
                         feedbackButton.setOnClickListener {
                             val scheduleId = document.id
                             val intent = Intent(this, FeedbackActivity::class.java)
