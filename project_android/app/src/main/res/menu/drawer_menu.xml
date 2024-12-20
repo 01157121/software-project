@@ -6,11 +6,11 @@
     <item
         android:id="@+id/add_accounting"
         android:title="新增分帳"
-        android:icon="@drawable/ic_user_list" />
+        android:icon="@drawable/ic_dollar" />
     <item
         android:id="@+id/show_accounting_result"
         android:title="分帳紀錄"
-        android:icon="@drawable/ic_user_list" />
+        android:icon="@drawable/ic_save_money" />
     <item
         android:id="@+id/nav_save"
         android:title="存檔"

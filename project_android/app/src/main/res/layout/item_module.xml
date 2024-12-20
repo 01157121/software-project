@@ -1,17 +1,56 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.cardview.widget.CardView
+<LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_margin="8dp"
-    android:elevation="4dp">
+    android:orientation="horizontal"
+    android:padding="16dp"
+    android:background="?android:attr/selectableItemBackground"
+    android:gravity="center_vertical">
 
-    <TextView
-        android:id="@+id/module_name"
-        android:layout_width="match_parent"
+    <!-- 左側裝飾圖標 -->
+    <ImageView
+        android:id="@+id/module_icon"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:src="@drawable/ic_schedule"
+        android:contentDescription="Module Icon"
+        android:layout_marginEnd="16dp" />
+
+    <!-- 中間模塊名稱與日期範圍 -->
+    <LinearLayout
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:padding="16dp"
-        android:text="模塊名稱"
-        android:textSize="18sp"/>
+        android:orientation="vertical"
+        android:layout_weight="1">
 
-</androidx.cardview.widget.CardView>
+        <TextView
+            android:id="@+id/module_name"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Module Name"
+            android:textAppearance="@style/TextAppearance.AppCompat.Medium"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:layout_marginBottom="4dp" />
+
+        <TextView
+            android:id="@+id/module_date_range"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="StartDate - EndDate"
+            android:textAppearance="@style/TextAppearance.AppCompat.Small"
+            android:textColor="?android:attr/textColorSecondary" />
+    </LinearLayout>
+
+    <!-- 右側三點功能表 -->
+    <ImageView
+        android:id="@+id/module_menu"
+        android:layout_width="24dp"
+        android:layout_height="24dp"
+        android:src="@drawable/ic_more_vert"
+        android:contentDescription="Options Menu"
+        android:scaleType="centerInside"
+        android:padding="4dp" />
+
+</LinearLayout>
