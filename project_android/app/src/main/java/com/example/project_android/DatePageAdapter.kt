@@ -24,11 +24,13 @@ class DatePageAdapter(
     private val totalDays: Int;
     private val db = FirebaseFirestore.getInstance();
     private val planMap: MutableMap<String, MutableList<Plan>> = mutableMapOf();
-
     init {
-        val calendar = Calendar.getInstance();
-        calendar.time = startDate;
-        totalDays = ((endDate.time - startDate.time) / (1000 * 60 * 60 * 24)).toInt() + 1;
+        val calendar = Calendar.getInstance()
+        calendar.time = startDate
+        totalDays = ((endDate.time - startDate.time) / (1000 * 60 * 60 * 24)).toInt() + 1
+
+        // 初始化時從 Firestore 加載資料
+        loadPlansFromDatabase()
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): DateViewHolder {
@@ -47,6 +49,60 @@ class DatePageAdapter(
     }
 
     override fun getItemCount(): Int = totalDays;
+
+    private fun loadPlansFromDatabase() {
+
+        db.collection("schedules").document(scheduleID)
+            .collection("dates")
+            .get()
+            .addOnSuccessListener {
+                documents ->
+                for (document in documents) {
+                    val dateKey = document.id
+                    db.collection("schedules").document(scheduleID)
+                        .collection("dates").document(dateKey)
+                        .collection("plans")
+                        .get()
+                        .addOnSuccessListener { planDocuments ->
+                            val plans = mutableListOf<Plan>()
+                            for (planDoc in planDocuments) {
+                                try {
+                                    // 讀取每個字段的值
+                                    val planName = planDoc.getString("planName") ?: ""
+                                    val startHour = planDoc.getLong("startHour")?.toInt() ?: 0
+                                    val startMinute = planDoc.getLong("startMinute")?.toInt() ?: 0
+                                    val endHour = planDoc.getLong("endHour")?.toInt() ?: 0
+                                    val endMinute = planDoc.getLong("endMinute")?.toInt() ?: 0
+                                    val planId = planDoc.getString("planId") ?: ""
+
+                                    // 建立 Plan 物件
+                                    val plan = Plan(
+                                        planName = planName,
+                                        startHour = startHour,
+                                        startMinute = startMinute,
+                                        endHour = endHour,
+                                        endMinute = endMinute,
+                                        planId = planId
+                                    )
+
+                                    // 加入到 plans 清單
+                                    plans.add(plan)
+                                } catch (e: Exception) {
+                                    showToast("PlanParsing Error parsing document: ${planDoc.id}, error: ${e.message}")
+                                }
+                            }
+                            planMap[dateKey] = plans
+                            notifyDataSetChanged() // 更新 RecyclerView
+                        }
+                        .addOnFailureListener {
+                            showToast("載入行程失敗：${it.message}")
+                        }
+                }
+            }
+            .addOnFailureListener {
+                showToast("載入日期失敗：${it.message}")
+            }
+    }
 
     private fun getDateForPosition(position: Int): Date {
         val calendar = Calendar.getInstance();
@@ -103,26 +159,35 @@ class DatePageAdapter(
     }
 
     private fun addPlan(plan: Plan, holder: DateViewHolder, dateKey: String) {
-        planMap.computeIfAbsent(dateKey) { mutableListOf() }.apply {
-            if (any { it == plan }) {
-                showToast("行程已存在，請勿重複新增");
-                return;
-            }
-            add(plan);
-            sortWith(compareBy({ it.startHour }, { it.startMinute }));
-        };
-
-        db.collection("schedules").document(scheduleID)
+        val dateDocumentRef = db.collection("schedules").document(scheduleID)
             .collection("dates").document(dateKey)
-            .collection("plans").document(plan.planId)
-            .set(plan)
+        //showToast("新增dates文件 ${dateDocumentRef.id}")
+        // 確保日期文件存在
+        dateDocumentRef.set(mapOf("exists" to true)) // 初始化文件（如果尚不存在）
             .addOnSuccessListener {
-                showToast("行程已新增");
-                redrawSchedules(holder, dateKey);
+                planMap.computeIfAbsent(dateKey) { mutableListOf() }.apply {
+                    if (any { it == plan }) {
+                        showToast("行程已存在，請勿重複新增")
+                        return@addOnSuccessListener
+                    }
+                    add(plan)
+                    sortWith(compareBy({ it.startHour }, { it.startMinute }))
+                }
+
+                // 新增行程到 Firestore
+                dateDocumentRef.collection("plans").document(plan.planId)
+                    .set(plan)
+                    .addOnSuccessListener {
+                        showToast("行程已新增")
+                        redrawSchedules(holder, dateKey)
+                    }
+                    .addOnFailureListener {
+                        showToast("行程新增失敗：${it.message}")
+                    }
             }
             .addOnFailureListener {
-                showToast("行程新增失敗：${it.message}");
-            };
+                showToast("建立日期文件失敗：${it.message}")
+            }
     }
 
     @SuppressLint("DefaultLocale")
