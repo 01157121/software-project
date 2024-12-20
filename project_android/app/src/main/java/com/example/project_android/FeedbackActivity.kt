@@ -1,6 +1,9 @@
 package com.example.project_android
 
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
+import android.provider.MediaStore
 import android.widget.EditText
 import android.widget.ImageButton
 import android.widget.Toast
@@ -16,6 +19,8 @@ class FeedbackActivity : AppCompatActivity() {
     private val mediaList = mutableListOf<Media>() // 儲存媒體的資料
     private val db = FirebaseFirestore.getInstance()
 
+    private val PICK_IMAGE_REQUEST = 1  // 請選擇圖像的請求碼
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_feedback)
@@ -30,10 +35,10 @@ class FeedbackActivity : AppCompatActivity() {
 
         // 加入圖片、影片按鈕
         findViewById<ImageButton>(R.id.add_image_button).setOnClickListener {
-            addMedia("image")
+            openImagePicker()
         }
         findViewById<ImageButton>(R.id.add_video_button).setOnClickListener {
-            addMedia("video")
+            addMediaVideo("video")
         }
 
         // 送出回饋按鈕
@@ -42,7 +47,37 @@ class FeedbackActivity : AppCompatActivity() {
         }
     }
 
-    private fun addMedia(type: String) {
+
+    // 開啟相簿選擇圖片
+    private fun openImagePicker() {
+        val intent = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
+        intent.type = "image/*"
+        startActivityForResult(intent, PICK_IMAGE_REQUEST)
+    }
+
+    // 處理選擇圖片後的結果
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (resultCode == RESULT_OK && requestCode == PICK_IMAGE_REQUEST) {
+            data?.data?.let { uri ->
+                addMedia("image", uri)
+            }
+        }
+    }
+
+    // 添加媒體到 mediaList 並更新 RecyclerView
+    private fun addMedia(type: String, uri: Uri) {
+        val media = Media(type, uri.toString())
+        mediaList.add(media)
+        // 更新 RecyclerView，這裡需要創建一個 RecyclerView Adapter 顯示媒體預覽
+        // 目前僅作為添加操作，根據需求可擴充 RecyclerView 以顯示圖片預覽
+        showToast("圖片已添加")
+    }
+
+
+
+
+    private fun addMediaVideo(type: String) {
         // 顯示文件選擇器或相機
         // 這裡你可以用 Android API 或第三方庫處理
         showToast("$type 功能未實現")
