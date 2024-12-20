@@ -14,10 +14,12 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.viewpager2.widget.ViewPager2
 import com.google.android.gms.tasks.Tasks
+import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.navigation.NavigationView
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
+import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -31,10 +33,6 @@ class PlanningActivity : AppCompatActivity() {
     private val db = FirebaseFirestore.getInstance()
     private lateinit var scheduleId: String
     private lateinit var feedbackButton: FloatingActionButton // 回饋按鈕
-    var startHour: Int = 0
-    var startMinute: Int = 0
-    var endHour: Int = 0
-    var endMinute: Int = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -52,16 +50,7 @@ class PlanningActivity : AppCompatActivity() {
         scheduleNameTextView = findViewById(R.id.schedule_name_text)
         drawerLayout = findViewById(R.id.drawer_layout)
         navigationView = findViewById(R.id.navigation_view)
-//        addButton = findViewById(R.id.add_plan_button)
         scheduleNameTextView.text = scheduleName
-
-
-//        val scheduleListContainer = findViewById<LinearLayout>(R.id.schedule_list_container)
-
-        // 新增计划
-//        addButton.setOnClickListener {
-//            showCreatePlan(scheduleListContainer)
-//        }
 
         // 設定選單圖示的點擊事件
         val menuIcon: ImageView = findViewById(R.id.menu_icon)
@@ -80,7 +69,7 @@ class PlanningActivity : AppCompatActivity() {
         val endDate = activityDateFormat.parse(endDateStr)!!   // 結束日期
 
         // 設定 Adapter
-        val adapter = DatePageAdapter(this, startDate, endDate)
+        val adapter = DatePageAdapter(this, startDate, endDate,scheduleId)
         viewPager.adapter = adapter
 
         // 設定初始頁為今天
@@ -94,76 +83,6 @@ class PlanningActivity : AppCompatActivity() {
         feedbackButton.visibility = View.GONE // 預設隱藏
 
         checkIfFeedbackNeeded()
-    }
-
-    private fun showCreatePlan(container: LinearLayout) {
-//        val dialogView = layoutInflater.inflate(R.layout.dialog_create_plan, null)
-//
-//        val dateButton: Button = dialogView.findViewById(R.id.date_button)
-//        val startTimeButton: Button = dialogView.findViewById(R.id.start_time_button)
-//        val endTimeButton: Button = dialogView.findViewById(R.id.end_time_button)
-//
-//        dateButton.setOnClickListener {
-//            showDatePickerDialog { selectedDate ->
-//                dialogView.findViewById<TextView>(R.id.date_button_text).text = selectedDate
-//            }
-//        }
-//
-//        startTimeButton.setOnClickListener {
-//            showTimePickerDialog { hour, minute ->
-//                startHour = hour
-//                startMinute = minute
-//                dialogView.findViewById<TextView>(R.id.start_time_button_text).text =
-//                    String.format("%02d:%02d", hour, minute)
-//            }
-//        }
-//
-//        endTimeButton.setOnClickListener {
-//            showTimePickerDialog { hour, minute ->
-//                endHour = hour
-//                endMinute = minute
-//                dialogView.findViewById<TextView>(R.id.end_time_button_text).text =
-//                    String.format("%02d:%02d", hour, minute)
-//            }
-//        }
-//
-//        val dialog = androidx.appcompat.app.AlertDialog.Builder(this)
-//            .setTitle("新增行程")
-//            .setView(dialogView)
-//            .setPositiveButton("新增") { _, _ ->
-//                val planName = dialogView.findViewById<EditText>(R.id.plan_name).text.toString()
-//                val selectedDate = dialogView.findViewById<TextView>(R.id.date_button_text).text.toString()
-//                addScheduleToContainer(container, planName, selectedDate)
-//            }
-//            .setNegativeButton("取消", null)
-//            .create()
-//
-//        dialog.show()
-    }
-
-    private fun addScheduleToContainer(container: LinearLayout, planName: String, date: String) {
-        val scheduleView = layoutInflater.inflate(R.layout.activity_planning_part_of_item, container, false)
-
-        scheduleView.findViewById<TextView>(R.id.plan_name_text).text = planName
-        scheduleView.findViewById<TextView>(R.id.date_text).text = date
-        scheduleView.findViewById<TextView>(R.id.time_range_text).text =
-            String.format("%02d:%02d-%02d:%02d", startHour, startMinute, endHour, endMinute)
-
-        container.addView(scheduleView)
-    }
-
-    private fun showDatePickerDialog(onDateSelected: (String) -> Unit) {
-        val calendar = Calendar.getInstance()
-        DatePickerDialog(this, { _, year, month, day ->
-            onDateSelected("$year/${month + 1}/$day")
-        }, calendar.get(Calendar.YEAR), calendar.get(Calendar.MONTH), calendar.get(Calendar.DAY_OF_MONTH)).show()
-    }
-
-    private fun showTimePickerDialog(onTimeSelected: (Int, Int) -> Unit) {
-        val calendar = Calendar.getInstance()
-        TimePickerDialog(this, { _, hour, minute ->
-            onTimeSelected(hour, minute)
-        }, calendar.get(Calendar.HOUR_OF_DAY), calendar.get(Calendar.MINUTE), true).show()
     }
 
     private fun setupNavigationMenu() {
