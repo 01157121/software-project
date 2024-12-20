@@ -26,6 +26,7 @@ import java.util.Calendar
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.auth.FirebaseAuth
 import com.bumptech.glide.Glide
+import com.google.firebase.firestore.FieldPath
 
 
 class LobbyActivity : AppCompatActivity() {
@@ -86,7 +87,7 @@ class LobbyActivity : AppCompatActivity() {
         }
         recyclerView = findViewById(R.id.module_list)
         recyclerView.layoutManager = GridLayoutManager(this, 2)
-        recyclerView.adapter = ModuleAdapter(getModuleList()) // 假設你有一個模塊清單資料
+        getModuleList() // 初始化模塊列表
 
         addButton = findViewById(R.id.add_button)
         addButton.setOnClickListener {
@@ -142,16 +143,78 @@ class LobbyActivity : AppCompatActivity() {
         }
     }
 
-    private fun getModuleList(): List<Module> {
-        return listOf(
-            Module("預設推薦行程"),
-            Module("其他人的行程"),
-            Module("其他人的行程"),
-            Module("其他人的行程")
-            // 更多模塊...
-        )
+    private fun getModuleList() {
+        val userId = FirebaseAuth.getInstance().currentUser?.uid ?: return
+        val userSchedulesRef = db.collection("users").document(userId).collection("schedules")
+
+        userSchedulesRef.get()
+            .addOnSuccessListener { scheduleDocuments ->
+                if (scheduleDocuments.isEmpty) {
+                    showToast("沒有任何行程")
+                    updateRecyclerView(emptyList())
+                    return@addOnSuccessListener
+                }
+
+                val scheduleIds = scheduleDocuments.map { it.id }
+                fetchSchedules(scheduleIds) { modules ->
+                    updateRecyclerView(modules)
+                }
+            }
+            .addOnFailureListener { exception ->
+                showToast("讀取用戶行程失敗: ${exception.message}")
+            }
     }
 
+    private fun fetchSchedules(scheduleIds: List<String>, callback: (List<Module>) -> Unit) {
+        val schedulesRef = db.collection("schedules")
+        schedulesRef.whereIn(FieldPath.documentId(), scheduleIds) // 使用 Firestore 文檔 ID
+            .get()
+            .addOnSuccessListener { scheduleData ->
+                val modules = scheduleData.map { document ->
+                    val scheduleName = document.getString("name") ?: "Unnamed Schedule"
+                    val scheduleId = document.id
+                    val startDate = document.getString("startDate") ?: ""
+                    val endDate = document.getString("endDate") ?: ""
+                    Module(scheduleName, scheduleId, startDate, endDate)
+                }
+                callback(modules)
+            }
+            .addOnFailureListener { exception ->
+                showToast("讀取行程失敗: ${exception.message}")
+                callback(emptyList())
+            }
+    }
+
+    private fun deleteSchedule(scheduleId: String) {
+        val schedulesRef = db.collection("schedules").document(scheduleId)
+        val userId = FirebaseAuth.getInstance().currentUser?.uid ?: return
+        val userSchedulesRef = db.collection("users").document(userId).collection("schedules").document(scheduleId)
+
+        db.runBatch { batch ->
+            batch.delete(schedulesRef)
+            batch.delete(userSchedulesRef)
+        }.addOnSuccessListener {
+            showToast("行程已刪除")
+            getModuleList() // 刷新模塊列表
+        }.addOnFailureListener { exception ->
+            showToast("刪除失敗: ${exception.message}")
+        }
+    }
+
+    private fun updateRecyclerView(modules: List<Module>) {
+        val adapter = ModuleAdapter(modules, { module ->
+            // 點擊模塊時的操作
+            val intent = Intent(this, PlanningActivity::class.java)
+            intent.putExtra("SCHEDULE_ID", module.id) // 將 scheduleId 傳遞給 PlanningActivity
+            intent.putExtra("SCHEDULE_NAME", module.name)
+            intent.putExtra("START_DATE", module.startDate)
+            intent.putExtra("END_DATE", module.endDate)
+            startActivity(intent)
+        }, { scheduleId ->
+            deleteSchedule(scheduleId)
+        })
+        recyclerView.adapter = adapter
+    }
 
 
     // 顯示創建行程表的對話框
