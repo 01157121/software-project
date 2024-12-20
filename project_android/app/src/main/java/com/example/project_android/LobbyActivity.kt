@@ -5,12 +5,14 @@ import android.app.AlertDialog
 import android.app.DatePickerDialog
 import android.content.Intent
 import android.os.Bundle
+import android.view.Menu
 import android.view.MenuItem
 import android.view.View
 import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageView
+import android.widget.PopupMenu
 import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
@@ -79,7 +81,7 @@ class LobbyActivity : AppCompatActivity() {
                     showProfileDialog()
                 }
                 R.id.nav_settings -> {
-
+                    showSettingsMenu()
                 }
             }
             drawerLayout.closeDrawers()
@@ -130,7 +132,46 @@ class LobbyActivity : AppCompatActivity() {
         dialog.show()
     }
 
+    // 顯示設定功能表
+    private fun showSettingsMenu() {
+        val anchorView = findViewById<View>(R.id.nav_settings) // 對應設定的導航選項
+        val popupMenu = PopupMenu(this, anchorView)
 
+        // 添加選項到功能表
+        popupMenu.menu.add(Menu.NONE, 1, 1, "登出")
+
+        // 設定選項點擊監聽
+        popupMenu.setOnMenuItemClickListener { menuItem ->
+            when (menuItem.itemId) {
+                1 -> showLogoutDialog() // 彈出登出確認對話框
+            }
+            true
+        }
+
+        popupMenu.show()
+    }
+
+    // 顯示登出確認對話框
+    private fun showLogoutDialog() {
+        AlertDialog.Builder(this)
+            .setTitle("登出")
+            .setMessage("確定要登出嗎？")
+            .setPositiveButton("確定") { _, _ ->
+                logoutAndRedirectToLogin()
+            }
+            .setNegativeButton("取消", null)
+            .show()
+    }
+
+
+    // 執行登出並跳轉到 LoginActivity
+    private fun logoutAndRedirectToLogin() {
+        FirebaseAuth.getInstance().signOut() // 執行 Firebase 登出操作
+        val intent = Intent(this, LoginActivity::class.java)
+        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        startActivity(intent)
+        finish() // 結束當前 Activity
+    }
 
     fun openDrawer(view: View) {
         drawerLayout.openDrawer(GravityCompat.START)
