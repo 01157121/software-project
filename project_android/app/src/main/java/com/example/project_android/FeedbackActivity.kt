@@ -4,9 +4,12 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.provider.MediaStore
+import android.widget.Button
 import android.view.View
 import android.widget.EditText
 import android.widget.ImageButton
+import android.widget.LinearLayout
+import android.widget.TextView
 import android.widget.ImageView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -15,24 +18,27 @@ import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.firebase.firestore.FirebaseFirestore
-
+import androidx.appcompat.app.AlertDialog
+data class MediaItem(
+    val type: String,
+    val uri: String
+)
 class FeedbackActivity : AppCompatActivity() {
-
+    private val mediaList = mutableListOf<MediaItem>()// 儲存媒體的資料
     private lateinit var feedbackEditText: EditText
-    private lateinit var previewRecyclerView: RecyclerView
-    private val mediaList = mutableListOf<Media>() // 儲存媒體的資料
     private val db = FirebaseFirestore.getInstance()
-
+    private lateinit var scheduleId: String
     private val PICK_IMAGE_REQUEST = 1  // 請選擇圖像的請求碼
-
+    private var feedbackDialog: androidx.appcompat.app.AlertDialog? = null
+    private lateinit var previewRecyclerView: RecyclerView
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_feedback)
-
+        scheduleId = intent.getStringExtra("SCHEDULE_ID") ?: throw IllegalArgumentException("SCHEDULE_ID is required")
         feedbackEditText = findViewById(R.id.feedback_edit_text)
-        previewRecyclerView = findViewById(R.id.preview_recycler_view)
 
         // 設置 RecyclerView 的布局管理器
+        previewRecyclerView = findViewById(R.id.preview_recycler_view)
         previewRecyclerView.layoutManager = LinearLayoutManager(this)
 
         // 設置 RecyclerView 的適配器
@@ -53,18 +59,75 @@ class FeedbackActivity : AppCompatActivity() {
 
         // 送出回饋按鈕
         findViewById<FloatingActionButton>(R.id.submit_feedback_button).setOnClickListener {
-            submitFeedback()
+            submitFeedback(scheduleId)
+        }
+
+        // 查看回饋按鈕
+        findViewById<FloatingActionButton>(R.id.view_feedback_button).setOnClickListener {
+            loadFeedbackList(scheduleId)
         }
     }
 
+    private fun loadFeedbackList(scheduleId: String) {
+        db.collection("schedules")
+            .document(scheduleId)
+            .collection("feedback")
+            .get()
+            .addOnSuccessListener { querySnapshot ->
+                // 使用 mapNotNull 正確地轉換成 List<Map<String, Any>>
+                val feedbackList: List<Map<String, Any>> = querySnapshot.documents.mapNotNull { document ->
+                    val feedbackId = document.getString("feedbackId") ?: return@mapNotNull null
+                    val text = document.getString("text") ?: "未知回饋"
+                    val timestamp = document.getLong("timestamp") ?: 0L
+                    mapOf(
+                        "feedbackId" to feedbackId,
+                        "text" to text,
+                        "timestamp" to timestamp
+                    ) // 這裡返回 Map<String, Any>
+                }
 
-    // 開啟相簿選擇圖片
+                // 顯示對話框
+                showFeedbackDialog(feedbackList)
+            }
+            .addOnFailureListener { e ->
+                showToast("無法加載回饋紀錄: ${e.message}")
+            }
+    }
+
     private fun openImagePicker() {
         val intent = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
         intent.type = "image/*"
         startActivityForResult(intent, PICK_IMAGE_REQUEST)
     }
 
+    private fun submitFeedback(scheduleId:String) {
+        val feedbackText = feedbackEditText.text.toString()
+
+        if (feedbackText.isBlank()) {
+            showToast("請輸入回饋內容")
+            return
+        }
+
+        val feedbackId = generateUniqueFeedbackId()
+        val feedbackData = hashMapOf(
+            "feedbackId" to feedbackId,
+            "text" to feedbackText,
+            "timestamp" to System.currentTimeMillis()
+        )
+
+        db.collection("schedules")
+            .document(scheduleId)
+            .collection("feedback")
+            .document(feedbackId)
+            .set(feedbackData)
+            .addOnSuccessListener {
+                showToast("回饋已提交！")
+                finish()
+            }
+            .addOnFailureListener {
+                showToast("提交失敗：${it.message}")
+            }
+    }
     // 處理選擇圖片後的結果
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
@@ -77,7 +140,7 @@ class FeedbackActivity : AppCompatActivity() {
 
     // 添加媒體到 mediaList 並更新 RecyclerView
     private fun addMedia(type: String, uri: Uri) {
-        val media = Media(type, uri.toString())
+        val media =  MediaItem(type, uri.toString())
         mediaList.add(media)
         // 更新 RecyclerView，這裡需要創建一個 RecyclerView Adapter 顯示媒體預覽
         // 目前僅作為添加操作，根據需求可擴充 RecyclerView 以顯示圖片預覽
@@ -146,16 +209,18 @@ class FeedbackActivity : AppCompatActivity() {
             return
         }
 
+        val feedbackId = generateUniqueFeedbackId()
         val feedbackData = hashMapOf(
+            "feedbackId" to feedbackId,
             "text" to feedbackText,
-            "media" to mediaList.map { it.toMap() },
             "timestamp" to System.currentTimeMillis()
         )
 
         db.collection("schedules")
             .document(scheduleId)
             .collection("feedback")
-            .add(feedbackData)
+            .document(feedbackId)
+            .set(feedbackData)
             .addOnSuccessListener {
                 showToast("回饋已提交！")
                 finish()
@@ -165,11 +230,94 @@ class FeedbackActivity : AppCompatActivity() {
             }
     }
 
+    private fun showFeedbackDialog(feedbackList: List<Map<String, Any>>) {
+        // 如果舊對話框存在，先關閉
+        feedbackDialog?.dismiss()
+        feedbackDialog = null
+
+        if (feedbackList.isEmpty()) {
+            showToast("沒有找到任何回饋紀錄")
+            return
+        }
+
+        val dialogView = layoutInflater.inflate(R.layout.dialog_feedback_results, null)
+        val feedbackContainer = dialogView.findViewById<LinearLayout>(R.id.feedback_results_container)
+        val closeButton = dialogView.findViewById<Button>(R.id.close_button)
+
+        feedbackList.forEach { feedback ->
+            val feedbackCard = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                setPadding(16, 16, 16, 16)
+                setBackgroundResource(R.drawable.item_background)
+                val params = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                ).apply {
+                    setMargins(8, 8, 8, 8)
+                }
+                layoutParams = params
+            }
+
+            val texts = feedback["text"] as? String ?: "未知回饋"
+            val timestamp = feedback["timestamp"] as? Long ?: 0L
+            val formattedTime = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm", java.util.Locale.getDefault()).format(timestamp)
+
+            val textView = TextView(this).apply {
+                text = "回饋內容: $texts\n時間: $formattedTime"
+                textSize = 16f
+                setPadding(8, 8, 8, 8)
+            }
+            feedbackCard.addView(textView)
+
+            // 長按事件刪除回饋
+            feedbackCard.setOnLongClickListener {
+                AlertDialog.Builder(this)
+                    .setTitle("刪除回饋紀錄")
+                    .setMessage("確定要刪除此回饋紀錄嗎？")
+                    .setPositiveButton("刪除") { _, _ ->
+                        val feedbackId = feedback["feedbackId"] as? String ?: return@setPositiveButton
+                        deleteFeedbackFromFirestore(scheduleId, feedbackId)
+                    }
+                    .setNegativeButton("取消", null)
+                    .show()
+                true
+            }
+
+            feedbackContainer.addView(feedbackCard)
+        }
+
+        val dialog = AlertDialog.Builder(this)
+            .setView(dialogView)
+            .create()
+
+        closeButton.setOnClickListener {
+            dialog.dismiss()
+        }
+
+        dialog.show()
+        feedbackDialog = dialog // 將新的對話框存儲起來
+    }
+
+    private fun deleteFeedbackFromFirestore(scheduleId: String, feedbackId: String) {
+        db.collection("schedules")
+            .document(scheduleId)
+            .collection("feedback")
+            .document(feedbackId)
+            .delete()
+            .addOnSuccessListener {
+                showToast("回饋紀錄已刪除")
+                loadFeedbackList(scheduleId) // 刪除後重新加載
+            }
+            .addOnFailureListener { e ->
+                showToast("刪除回饋紀錄失敗: ${e.message}")
+            }
+    }
+
+    private fun generateUniqueFeedbackId(): String {
+        return java.util.UUID.randomUUID().toString()
+    }
+
     private fun showToast(message: String) {
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
     }
-}
-
-data class Media(val type: String, val uri: String) {
-    fun toMap(): Map<String, String> = mapOf("type" to type, "uri" to uri)
 }
