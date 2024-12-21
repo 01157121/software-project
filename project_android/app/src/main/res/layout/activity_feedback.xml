@@ -129,16 +129,16 @@
         android:adjustViewBounds="true"
         android:padding="4dp" />
 
-        <ImageButton
-            android:id="@+id/add_video_button"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:src="@drawable/ic_add_video"
-            android:contentDescription="加入影片"
-            android:background="?android:attr/selectableItemBackgroundBorderless"
-            android:scaleType="fitCenter"
-            android:adjustViewBounds="true"
-            android:padding="4dp" />
+<!--        <ImageButton-->
+<!--            android:id="@+id/add_video_button"-->
+<!--            android:layout_width="40dp"-->
+<!--            android:layout_height="40dp"-->
+<!--            android:src="@drawable/ic_add_video"-->
+<!--            android:contentDescription="加入影片"-->
+<!--            android:background="?android:attr/selectableItemBackgroundBorderless"-->
+<!--            android:scaleType="fitCenter"-->
+<!--            android:adjustViewBounds="true"-->
+<!--            android:padding="4dp" />-->
 
     </LinearLayout>
 
@@ -157,5 +157,6 @@
         android:layout_height="wrap_content"
         android:layout_gravity="end"
         android:src="@drawable/ic_check"
+        android:layout_margin="10dp"
         android:contentDescription="確認送出" />
 </LinearLayout>

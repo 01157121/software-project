@@ -47,9 +47,9 @@ class FeedbackActivity : AppCompatActivity() {
         findViewById<ImageButton>(R.id.add_image_button).setOnClickListener {
             openImagePicker()
         }
-        findViewById<ImageButton>(R.id.add_video_button).setOnClickListener {
-            addMediaVideo("video")
-        }
+//        findViewById<ImageButton>(R.id.add_video_button).setOnClickListener {
+//            addMediaVideo("video")
+//        }
 
         // 送出回饋按鈕
         findViewById<FloatingActionButton>(R.id.submit_feedback_button).setOnClickListener {
@@ -81,13 +81,6 @@ class FeedbackActivity : AppCompatActivity() {
         mediaList.add(media)
         // 更新 RecyclerView，這裡需要創建一個 RecyclerView Adapter 顯示媒體預覽
         // 目前僅作為添加操作，根據需求可擴充 RecyclerView 以顯示圖片預覽
-
-        // 顯示圖片到 image_preview 上
-//        val imagePreview = findViewById<ImageView>(R.id.image_preview)
-//        imagePreview.visibility = View.VISIBLE  // 顯示 ImageView
-//        Glide.with(this)
-//            .load(uri)
-//            .into(imagePreview)
 
         // 顯示圖片到 image_preview 上
         val imagePreview = findViewById<ImageView>(R.id.image_preview)
@@ -138,11 +131,11 @@ class FeedbackActivity : AppCompatActivity() {
 
 
 
-    private fun addMediaVideo(type: String) {
-        // 顯示文件選擇器或相機
-        // 這裡你可以用 Android API 或第三方庫處理
-        showToast("$type 功能未實現")
-    }
+//    private fun addMediaVideo(type: String) {
+//        // 顯示文件選擇器或相機
+//        // 這裡你可以用 Android API 或第三方庫處理
+//        showToast("$type 功能未實現")
+//    }
 
     private fun submitFeedback() {
         val scheduleId = intent.getStringExtra("SCHEDULE_ID") ?: return
