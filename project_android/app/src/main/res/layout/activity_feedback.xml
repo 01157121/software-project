@@ -30,6 +30,14 @@
         android:padding="16dp"
         android:background="@drawable/feedback_edittext_background" />
 
+    <!-- 顯示媒體圖片 -->
+    <ImageView
+        android:id="@+id/media_image_view"
+        android:layout_width="80dp"
+        android:layout_height="80dp"
+        android:layout_marginEnd="8dp"
+        android:scaleType="centerCrop" />
+
     <!-- 添加媒體 -->
     <LinearLayout
         android:layout_width="match_parent"
