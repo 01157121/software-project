@@ -32,12 +32,14 @@
 
     <!-- 顯示媒體圖片 -->
     <ImageView
-        android:id="@+id/media_image_view"
+        android:id="@+id/image_preview"
         android:layout_width="80dp"
         android:layout_height="80dp"
-        android:layout_marginEnd="8dp"
-        android:scaleType="centerCrop" />
-
+        android:layout_marginBottom="16dp"
+        android:layout_gravity="center"
+        android:scaleType="centerCrop"
+        android:visibility="gone" /> <!-- 預設隱藏，選擇圖片後顯示 -->
+    
     <!-- 添加媒體 -->
     <LinearLayout
         android:layout_width="match_parent"

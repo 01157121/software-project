@@ -4,11 +4,15 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.provider.MediaStore
+import android.view.View
 import android.widget.EditText
 import android.widget.ImageButton
+import android.widget.ImageView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.bumptech.glide.Glide
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.firebase.firestore.FirebaseFirestore
 
@@ -27,6 +31,12 @@ class FeedbackActivity : AppCompatActivity() {
 
         feedbackEditText = findViewById(R.id.feedback_edit_text)
         previewRecyclerView = findViewById(R.id.preview_recycler_view)
+
+        // 設置 RecyclerView 的布局管理器
+        previewRecyclerView.layoutManager = LinearLayoutManager(this)
+
+        // 設置 RecyclerView 的適配器
+//        previewRecyclerView.adapter = MediaAdapter(mediaList)
 
         // 返回按鈕
         findViewById<ImageButton>(R.id.back_button).setOnClickListener {
@@ -71,6 +81,16 @@ class FeedbackActivity : AppCompatActivity() {
         mediaList.add(media)
         // 更新 RecyclerView，這裡需要創建一個 RecyclerView Adapter 顯示媒體預覽
         // 目前僅作為添加操作，根據需求可擴充 RecyclerView 以顯示圖片預覽
+
+        // 顯示圖片到 image_preview 上
+        val imagePreview = findViewById<ImageView>(R.id.image_preview)
+        imagePreview.visibility = View.VISIBLE  // 顯示 ImageView
+        Glide.with(this)
+            .load(uri)
+            .into(imagePreview)
+
+        // 通知適配器更新 RecyclerView
+        previewRecyclerView.adapter?.notifyDataSetChanged()
         showToast("圖片已添加")
     }
 
