@@ -110,8 +110,7 @@ class PlanningActivity : AppCompatActivity() {
                 R.id.add_accounting -> addAccounting()
                 R.id.show_accounting_result -> showAccountingResult()
                 R.id.nav_user_list -> showUserList()
-                R.id.nav_save -> saveSchedule()
-                R.id.nav_export -> exportSchedule()
+                R.id.nav_export -> showExportDialog()
                 R.id.nav_home -> goToHomePage()
             }
             drawerLayout.closeDrawer(Gravity.START)
@@ -125,9 +124,16 @@ class PlanningActivity : AppCompatActivity() {
         startActivity(intent)
     }
 
-    private fun saveSchedule() {
-        // 保存行程
-
+    // 顯示登出確認對話框
+    private fun showExportDialog() {
+        AlertDialog.Builder(this)
+            .setTitle("匯出")
+            .setMessage("確定要匯出整份行程表嗎？")
+            .setPositiveButton("確定") { _, _ ->
+                exportSchedule()
+            }
+            .setNegativeButton("取消", null)
+            .show()
     }
 
     private fun exportSchedule() {
@@ -148,24 +154,38 @@ class PlanningActivity : AppCompatActivity() {
                     val date = dateDoc.id // 日期名稱
                     val plansRef = dateDoc.reference.collection("plans")
                     tasks.add(plansRef.get().addOnSuccessListener { plans ->
-                        // 添加日期標題
-                        csvBuilder.append("日期: $date\n")
-                        csvBuilder.append("時間,行程名稱\n") // 中文標題
-
-                        // 填入行程資料
-                        for (planDoc in plans) {
+                        // 提取所有行程並排序
+                        val sortedPlans = plans.map { planDoc ->
                             val planName = planDoc.getString("planName") ?: "未命名"
                             val startHour = planDoc.getLong("startHour")?.toInt() ?: 0
                             val startMinute = planDoc.getLong("startMinute")?.toInt() ?: 0
                             val endHour = planDoc.getLong("endHour")?.toInt() ?: 0
                             val endMinute = planDoc.getLong("endMinute")?.toInt() ?: 0
 
+                            mapOf(
+                                "planName" to planName,
+                                "startHour" to startHour,
+                                "startMinute" to startMinute,
+                                "endHour" to endHour,
+                                "endMinute" to endMinute
+                            )
+                        }.sortedWith(compareBy(
+                            { it["startHour"] as Int }, // 按開始小時排序
+                            { it["startMinute"] as Int } // 再按開始分鐘排序
+                        ))
+
+                        // 添加日期標題
+                        csvBuilder.append("日期: $date\n")
+                        csvBuilder.append("時間,行程名稱\n") // 中文標題
+
+                        // 填入行程資料
+                        for (plan in sortedPlans) {
                             val timeRange = String.format(
                                 "%02d:%02d - %02d:%02d",
-                                startHour, startMinute, endHour, endMinute
+                                plan["startHour"], plan["startMinute"],
+                                plan["endHour"], plan["endMinute"]
                             )
-
-                            csvBuilder.append("$timeRange,$planName\n")
+                            csvBuilder.append("$timeRange,${plan["planName"]}\n")
                         }
 
                         csvBuilder.append("\n") // 分隔不同日期
@@ -186,7 +206,6 @@ class PlanningActivity : AppCompatActivity() {
                 showToast("讀取行程失敗: ${e.message}")
             }
     }
-
 
     private fun goToHomePage() {
         val intent = Intent(this, LobbyActivity::class.java)

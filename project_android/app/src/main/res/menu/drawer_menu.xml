@@ -12,10 +12,6 @@
         android:title="分帳紀錄"
         android:icon="@drawable/ic_save_money" />
     <item
-        android:id="@+id/nav_save"
-        android:title="存檔"
-        android:icon="@drawable/ic_save" />
-    <item
         android:id="@+id/nav_export"
         android:title="匯出"
         android:icon="@drawable/ic_export" />
