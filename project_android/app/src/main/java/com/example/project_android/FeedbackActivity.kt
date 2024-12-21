@@ -83,11 +83,52 @@ class FeedbackActivity : AppCompatActivity() {
         // 目前僅作為添加操作，根據需求可擴充 RecyclerView 以顯示圖片預覽
 
         // 顯示圖片到 image_preview 上
+//        val imagePreview = findViewById<ImageView>(R.id.image_preview)
+//        imagePreview.visibility = View.VISIBLE  // 顯示 ImageView
+//        Glide.with(this)
+//            .load(uri)
+//            .into(imagePreview)
+
+        // 顯示圖片到 image_preview 上
         val imagePreview = findViewById<ImageView>(R.id.image_preview)
-        imagePreview.visibility = View.VISIBLE  // 顯示 ImageView
-        Glide.with(this)
-            .load(uri)
-            .into(imagePreview)
+        val imagePreview2 = findViewById<ImageView>(R.id.image_preview_2)
+        val imagePreview3 = findViewById<ImageView>(R.id.image_preview_3)
+        val imagePreview4 = findViewById<ImageView>(R.id.image_preview_4)
+        val imagePreview5 = findViewById<ImageView>(R.id.image_preview_5)
+        val imagePreview6 = findViewById<ImageView>(R.id.image_preview_6)
+
+
+        if (imagePreview.visibility == View.GONE) {
+            imagePreview.visibility = View.VISIBLE  // 顯示第一張圖片
+            Glide.with(this)
+                .load(uri)
+                .into(imagePreview)
+        } else if (imagePreview2.visibility == View.GONE) {
+            imagePreview2.visibility = View.VISIBLE  // 顯示第二張圖片
+            Glide.with(this)
+                .load(uri)
+                .into(imagePreview2)
+        } else if (imagePreview3.visibility == View.GONE) {
+            imagePreview3.visibility = View.VISIBLE  // 顯示第三張圖片
+            Glide.with(this)
+                .load(uri)
+                .into(imagePreview3)
+        } else if (imagePreview4.visibility == View.GONE) {
+            imagePreview4.visibility = View.VISIBLE  // 顯示第四張圖片
+            Glide.with(this)
+                .load(uri)
+                .into(imagePreview4)
+        } else if (imagePreview5.visibility == View.GONE) {
+            imagePreview5.visibility = View.VISIBLE  // 顯示第五張圖片
+            Glide.with(this)
+                .load(uri)
+                .into(imagePreview5)
+        } else if (imagePreview6.visibility == View.GONE) {
+            imagePreview6.visibility = View.VISIBLE  // 顯示第六張圖片
+            Glide.with(this)
+                .load(uri)
+                .into(imagePreview6)
+        }
 
         // 通知適配器更新 RecyclerView
         previewRecyclerView.adapter?.notifyDataSetChanged()

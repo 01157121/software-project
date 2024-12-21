@@ -31,15 +31,85 @@
         android:background="@drawable/feedback_edittext_background" />
 
     <!-- 顯示媒體圖片 -->
-    <ImageView
-        android:id="@+id/image_preview"
-        android:layout_width="80dp"
-        android:layout_height="80dp"
-        android:layout_marginBottom="16dp"
-        android:layout_gravity="center"
-        android:scaleType="centerCrop"
-        android:visibility="gone" /> <!-- 預設隱藏，選擇圖片後顯示 -->
-    
+<!--    <ImageView-->
+<!--        android:id="@+id/image_preview"-->
+<!--        android:layout_width="80dp"-->
+<!--        android:layout_height="80dp"-->
+<!--        android:layout_marginBottom="16dp"-->
+<!--        android:layout_gravity="center"-->
+<!--        android:scaleType="centerCrop"-->
+<!--        android:visibility="gone" /> &lt;!&ndash; 預設隱藏，選擇圖片後顯示 &ndash;&gt;-->
+
+    <!-- 顯示媒體圖片 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:layout_marginBottom="16dp">
+
+        <ImageView
+            android:id="@+id/image_preview"
+            android:layout_width="100dp"
+            android:layout_height="100dp"
+            android:layout_marginEnd="8dp"
+            android:scaleType="centerCrop"
+            android:visibility="gone" /> <!-- 預設隱藏 -->
+
+        <!-- 新增另一張圖片 -->
+        <ImageView
+            android:id="@+id/image_preview_2"
+            android:layout_width="100dp"
+            android:layout_height="100dp"
+            android:layout_marginEnd="8dp"
+            android:scaleType="centerCrop"
+            android:visibility="gone" /> <!-- 預設隱藏 -->
+
+        <!-- 新增另一張圖片 -->
+        <ImageView
+            android:id="@+id/image_preview_3"
+            android:layout_width="100dp"
+            android:layout_height="100dp"
+            android:layout_marginEnd="8dp"
+            android:scaleType="centerCrop"
+            android:visibility="gone" /> <!-- 預設隱藏 -->
+    </LinearLayout>
+
+    <!-- 顯示媒體圖片 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:layout_marginBottom="16dp">
+
+        <ImageView
+            android:id="@+id/image_preview_4"
+            android:layout_width="100dp"
+            android:layout_height="100dp"
+            android:layout_marginEnd="8dp"
+            android:scaleType="centerCrop"
+            android:visibility="gone" /> <!-- 預設隱藏 -->
+
+        <!-- 新增另一張圖片 -->
+        <ImageView
+            android:id="@+id/image_preview_5"
+            android:layout_width="100dp"
+            android:layout_height="100dp"
+            android:layout_marginEnd="8dp"
+            android:scaleType="centerCrop"
+            android:visibility="gone" /> <!-- 預設隱藏 -->
+
+        <!-- 新增另一張圖片 -->
+        <ImageView
+            android:id="@+id/image_preview_6"
+            android:layout_width="100dp"
+            android:layout_height="100dp"
+            android:layout_marginEnd="8dp"
+            android:scaleType="centerCrop"
+            android:visibility="gone" /> <!-- 預設隱藏 -->
+    </LinearLayout>
+
     <!-- 添加媒體 -->
     <LinearLayout
         android:layout_width="match_parent"

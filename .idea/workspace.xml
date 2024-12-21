@@ -16,7 +16,6 @@
     <list default="true" id="e29f201f-91af-40b8-b183-779ee5b41cc2" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/project_android/app/src/main/java/com/example/project_android/FeedbackActivity.kt" beforeDir="false" afterPath="$PROJECT_DIR$/project_android/app/src/main/java/com/example/project_android/FeedbackActivity.kt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/project_android/app/src/main/java/com/example/project_android/MediaAdapter.kt" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/project_android/app/src/main/res/layout/activity_feedback.xml" beforeDir="false" afterPath="$PROJECT_DIR$/project_android/app/src/main/res/layout/activity_feedback.xml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
