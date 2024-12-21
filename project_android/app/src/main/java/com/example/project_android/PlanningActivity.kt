@@ -139,7 +139,7 @@ class PlanningActivity : AppCompatActivity() {
     private fun exportSchedule() {
         val db = FirebaseFirestore.getInstance()
         val scheduleRef = db.collection("schedules").document(scheduleId).collection("dates")
-        val csvBuilder = StringBuilder()
+        val dateDataList = mutableListOf<Pair<String, List<Map<String, Any>>>>()
 
         scheduleRef.get()
             .addOnSuccessListener { dateDocuments ->
@@ -170,31 +170,42 @@ class PlanningActivity : AppCompatActivity() {
                                 "endMinute" to endMinute
                             )
                         }.sortedWith(compareBy(
-                            { it["startHour"] as Int }, // 按開始小時排序
-                            { it["startMinute"] as Int } // 再按開始分鐘排序
+                            { it["startHour"] as Int },
+                            { it["startMinute"] as Int }
                         ))
 
-                        // 添加日期標題
-                        csvBuilder.append("日期: $date\n")
-                        csvBuilder.append("時間,行程名稱\n") // 中文標題
-
-                        // 填入行程資料
-                        for (plan in sortedPlans) {
-                            val timeRange = String.format(
-                                "%02d:%02d - %02d:%02d",
-                                plan["startHour"], plan["startMinute"],
-                                plan["endHour"], plan["endMinute"]
-                            )
-                            csvBuilder.append("$timeRange,${plan["planName"]}\n")
-                        }
-
-                        csvBuilder.append("\n") // 分隔不同日期
+                        // 將日期和對應的行程存入暫存集合
+                        dateDataList.add(date to sortedPlans)
                     })
                 }
 
+                // 等待所有異步操作完成
                 Tasks.whenAllSuccess<QuerySnapshot>(tasks)
                     .addOnSuccessListener {
-                        // 所有請求完成後，生成 CSV 文件
+                        // 按日期排序
+                        dateDataList.sortBy { it.first } // 假設日期名稱可以按字典序排序
+
+                        // 生成 CSV
+                        val csvBuilder = StringBuilder()
+                        for ((date, plans) in dateDataList) {
+                            // 添加日期標題
+                            csvBuilder.append("日期: $date\n")
+                            csvBuilder.append("時間,行程名稱\n") // 中文標題
+
+                            // 填入行程資料
+                            for (plan in plans) {
+                                val timeRange = String.format(
+                                    "%02d:%02d - %02d:%02d",
+                                    plan["startHour"], plan["startMinute"],
+                                    plan["endHour"], plan["endMinute"]
+                                )
+                                csvBuilder.append("$timeRange,${plan["planName"]}\n")
+                            }
+
+                            csvBuilder.append("\n") // 分隔不同日期
+                        }
+
+                        // 匯出成 Excel 文件
                         val csvContent = csvBuilder.toString()
                         convertCsvToExcel(scheduleName, csvContent)
                     }
@@ -206,6 +217,7 @@ class PlanningActivity : AppCompatActivity() {
                 showToast("讀取行程失敗: ${e.message}")
             }
     }
+
 
     private fun goToHomePage() {
         val intent = Intent(this, LobbyActivity::class.java)
