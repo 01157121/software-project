@@ -17,12 +17,14 @@ import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.viewpager2.widget.ViewPager2
+import com.google.android.gms.tasks.Task
 import com.google.android.gms.tasks.Tasks
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.navigation.NavigationView
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.QuerySnapshot
 import org.apache.poi.xssf.usermodel.XSSFWorkbook
 import java.io.File
 import java.io.FileOutputStream
@@ -140,47 +142,51 @@ class PlanningActivity : AppCompatActivity() {
                     return@addOnSuccessListener
                 }
 
+                val tasks = mutableListOf<Task<QuerySnapshot>>()
+
                 for (dateDoc in dateDocuments) {
                     val date = dateDoc.id // 日期名稱
                     val plansRef = dateDoc.reference.collection("plans")
+                    tasks.add(plansRef.get().addOnSuccessListener { plans ->
+                        // 添加日期標題
+                        csvBuilder.append("日期: $date\n")
+                        csvBuilder.append("時間,行程名稱\n") // 中文標題
 
-                    plansRef.get()
-                        .addOnSuccessListener { plans ->
-                            // 添加日期標題
-                            csvBuilder.append("日期: $date\n")
-                            csvBuilder.append("time,name\n") // 中文標題
+                        // 填入行程資料
+                        for (planDoc in plans) {
+                            val planName = planDoc.getString("planName") ?: "未命名"
+                            val startHour = planDoc.getLong("startHour")?.toInt() ?: 0
+                            val startMinute = planDoc.getLong("startMinute")?.toInt() ?: 0
+                            val endHour = planDoc.getLong("endHour")?.toInt() ?: 0
+                            val endMinute = planDoc.getLong("endMinute")?.toInt() ?: 0
 
-                            // 填入行程資料
-                            for (planDoc in plans) {
-                                val planName = planDoc.getString("planName") ?: "unname"
-                                val startHour = planDoc.getLong("startHour")?.toInt() ?: 0
-                                val startMinute = planDoc.getLong("startMinute")?.toInt() ?: 0
-                                val endHour = planDoc.getLong("endHour")?.toInt() ?: 0
-                                val endMinute = planDoc.getLong("endMinute")?.toInt() ?: 0
+                            val timeRange = String.format(
+                                "%02d:%02d - %02d:%02d",
+                                startHour, startMinute, endHour, endMinute
+                            )
 
-                                val timeRange = String.format(
-                                    "%02d:%02d - %02d:%02d",
-                                    startHour, startMinute, endHour, endMinute
-                                )
-
-                                csvBuilder.append("$timeRange,$planName\n")
-                            }
-
-                            csvBuilder.append("\n") // 分隔不同日期
+                            csvBuilder.append("$timeRange,$planName\n")
                         }
-                        .addOnFailureListener { e ->
-                            showToast("讀取行程計畫失敗: ${e.message}")
-                        }
+
+                        csvBuilder.append("\n") // 分隔不同日期
+                    })
                 }
 
-                // 生成 CSV 檔案並轉換為 XLSX
-                val csvContent = csvBuilder.toString()
-                convertCsvToExcel(scheduleName, csvContent)
+                Tasks.whenAllSuccess<QuerySnapshot>(tasks)
+                    .addOnSuccessListener {
+                        // 所有請求完成後，生成 CSV 文件
+                        val csvContent = csvBuilder.toString()
+                        convertCsvToExcel(scheduleName, csvContent)
+                    }
+                    .addOnFailureListener { e ->
+                        showToast("匯出行程失敗: ${e.message}")
+                    }
             }
             .addOnFailureListener { e ->
                 showToast("讀取行程失敗: ${e.message}")
             }
     }
+
 
     private fun goToHomePage() {
         val intent = Intent(this, LobbyActivity::class.java)
@@ -221,7 +227,7 @@ class PlanningActivity : AppCompatActivity() {
             }
 
             // 匯出到下載目錄
-            exportScheduleToDownloads(workbook, scheduleName,csvContent)
+            exportScheduleToDownloads(workbook, scheduleName, csvContent)
         } catch (e: Exception) {
             showToast("CSV 轉 XLSX 失敗: ${e.message}")
         } finally {
@@ -232,6 +238,7 @@ class PlanningActivity : AppCompatActivity() {
             }
         }
     }
+
 
     private fun exportScheduleToDownloads(workbook: XSSFWorkbook, scheduleName: String, csvContent: String) {
         val xlsxFileName = "$scheduleName.xlsx"
@@ -271,7 +278,9 @@ class PlanningActivity : AppCompatActivity() {
             csvUri?.let {
                 try {
                     resolver.openOutputStream(it)?.use { outputStream ->
-                        outputStream.write(csvContent.toByteArray(Charsets.UTF_8))
+                        // 在寫入 CSV 時添加 BOM
+                        val bom = "\uFEFF"
+                        outputStream.write((bom + csvContent).toByteArray(Charsets.UTF_8))
                     }
                     showToast("CSV 行程表已匯出到下載目錄: $csvFileName")
                 } catch (e: Exception) {
@@ -297,7 +306,9 @@ class PlanningActivity : AppCompatActivity() {
             val csvFile = File(downloadsDir, csvFileName)
             try {
                 FileOutputStream(csvFile).use { outputStream ->
-                    outputStream.write(csvContent.toByteArray(Charsets.UTF_8))
+                    // 在寫入 CSV 時添加 BOM
+                    val bom = "\uFEFF"
+                    outputStream.write((bom + csvContent).toByteArray(Charsets.UTF_8))
                 }
                 showToast("CSV 行程表已匯出到下載目錄: $csvFileName")
             } catch (e: Exception) {
@@ -312,11 +323,6 @@ class PlanningActivity : AppCompatActivity() {
             showToast("關閉 Workbook 時發生錯誤: ${e.message}")
         }
     }
-
-
-
-
-
 
     private fun addAccounting() {
         members = ArrayList()
