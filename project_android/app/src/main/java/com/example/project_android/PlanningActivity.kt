@@ -4,9 +4,13 @@ import DatePageAdapter
 import android.app.AlertDialog
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
+import android.content.ContentValues
 import android.content.Intent
 import android.graphics.Typeface
+import android.os.Build
 import android.os.Bundle
+import android.os.Environment
+import android.provider.MediaStore
 import android.view.Gravity
 import android.view.View
 import android.widget.*
@@ -19,6 +23,9 @@ import com.google.android.material.navigation.NavigationView
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
+import org.apache.poi.xssf.usermodel.XSSFWorkbook
+import java.io.File
+import java.io.FileOutputStream
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.*
@@ -32,6 +39,7 @@ class PlanningActivity : AppCompatActivity() {
     private val auth = FirebaseAuth.getInstance()
     private val db = FirebaseFirestore.getInstance()
     private lateinit var scheduleId: String
+    private lateinit var scheduleName: String
     private lateinit var feedbackButton: FloatingActionButton // 回饋按鈕
     private var accountingResultDialog: AlertDialog? = null
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -39,7 +47,7 @@ class PlanningActivity : AppCompatActivity() {
         setContentView(R.layout.activity_planning)
 
         // 接收 Intent 数据
-        val scheduleName = intent.getStringExtra("SCHEDULE_NAME")
+        scheduleName = intent.getStringExtra("SCHEDULE_NAME")?: throw IllegalArgumentException("SCHEDULE_NAME is required")
         val startDateStr = intent.getStringExtra("START_DATE")
         val endDateStr = intent.getStringExtra("END_DATE")
         scheduleId = intent.getStringExtra("SCHEDULE_ID") ?: throw IllegalArgumentException("SCHEDULE_ID is required")
@@ -80,9 +88,14 @@ class PlanningActivity : AppCompatActivity() {
         }
         // 回饋功能
         feedbackButton = findViewById(R.id.feedback_button)
-        feedbackButton.visibility = View.GONE // 預設隱藏
+        feedbackButton.setOnClickListener {
+            val intent = Intent(this, FeedbackActivity::class.java)
+            intent.putExtra("SCHEDULE_ID", scheduleId)
+            startActivity(intent)
+        }
+        feedbackButton.visibility = if (endDate >= today) View.GONE else View.VISIBLE
 
-        checkIfFeedbackNeeded()
+        //checkIfFeedbackNeeded()
     }
 
     private fun setupNavigationMenu() {
@@ -116,7 +129,57 @@ class PlanningActivity : AppCompatActivity() {
     }
 
     private fun exportSchedule() {
-        // 导出行程
+        val db = FirebaseFirestore.getInstance()
+        val scheduleRef = db.collection("schedules").document(scheduleId).collection("dates")
+        val csvBuilder = StringBuilder()
+
+        scheduleRef.get()
+            .addOnSuccessListener { dateDocuments ->
+                if (dateDocuments.isEmpty) {
+                    showToast("沒有行程可匯出")
+                    return@addOnSuccessListener
+                }
+
+                for (dateDoc in dateDocuments) {
+                    val date = dateDoc.id // 日期名稱
+                    val plansRef = dateDoc.reference.collection("plans")
+
+                    plansRef.get()
+                        .addOnSuccessListener { plans ->
+                            // 添加日期標題
+                            csvBuilder.append("日期: $date\n")
+                            csvBuilder.append("time,name\n") // 中文標題
+
+                            // 填入行程資料
+                            for (planDoc in plans) {
+                                val planName = planDoc.getString("planName") ?: "unname"
+                                val startHour = planDoc.getLong("startHour")?.toInt() ?: 0
+                                val startMinute = planDoc.getLong("startMinute")?.toInt() ?: 0
+                                val endHour = planDoc.getLong("endHour")?.toInt() ?: 0
+                                val endMinute = planDoc.getLong("endMinute")?.toInt() ?: 0
+
+                                val timeRange = String.format(
+                                    "%02d:%02d - %02d:%02d",
+                                    startHour, startMinute, endHour, endMinute
+                                )
+
+                                csvBuilder.append("$timeRange,$planName\n")
+                            }
+
+                            csvBuilder.append("\n") // 分隔不同日期
+                        }
+                        .addOnFailureListener { e ->
+                            showToast("讀取行程計畫失敗: ${e.message}")
+                        }
+                }
+
+                // 生成 CSV 檔案並轉換為 XLSX
+                val csvContent = csvBuilder.toString()
+                convertCsvToExcel(scheduleName, csvContent)
+            }
+            .addOnFailureListener { e ->
+                showToast("讀取行程失敗: ${e.message}")
+            }
     }
 
     private fun goToHomePage() {
@@ -125,51 +188,135 @@ class PlanningActivity : AppCompatActivity() {
         finish()
     }
 
-    private fun checkIfFeedbackNeeded() {
-        val currentDate = Calendar.getInstance().time
-        val userId = auth.currentUser?.uid ?: return
+    private fun convertCsvToExcel(scheduleName: String, csvContent: String) {
+        val workbook = XSSFWorkbook() // 創建工作簿
 
-        db.collection("schedules")
-            .whereArrayContains("collaborators", userId)
-            .get()
-            .addOnSuccessListener { querySnapshot ->
-                querySnapshot.documents.forEach { document ->
-//                    val endDateStr = document.getString("endDate") ?: return@forEach
-                    val endDateStr = intent.getStringExtra("END_DATE")
+        try {
+            // 將 CSV 內容按日期分組
+            val dateSections = csvContent.split("\n\n") // 每個日期用空行分隔
+            for (section in dateSections) {
+                val lines = section.split("\n").filter { it.isNotBlank() }
+                if (lines.isEmpty()) continue
 
-                    // 添加日期解析的異常處理
-                    val endDate = try {
-                        SimpleDateFormat("yyyy/MM/dd", Locale.getDefault()).parse(endDateStr)
-                    } catch (e: ParseException) {
-                        e.printStackTrace()
-                        null // 如果解析失敗，返回 null
-                    }
+                // 第一行是日期標題
+                val date = lines[0].replace("日期: ", "").trim()
 
-                    if (endDate != null) {
-                        // 使用 Calendar 增加一天
-                        val calendar = Calendar.getInstance()
-                        calendar.time = endDate
-                        calendar.add(Calendar.DAY_OF_YEAR, 1) // 增加一天
-                        val updatedEndDate = calendar.time
+                // 確保工作表名稱合法，替換非法字符
+                val safeSheetName = date.replace("[\\/:*?\"<>|]".toRegex(), "_")
+                val sheet = workbook.createSheet(safeSheetName)
 
-                        // 比較當前日期與修改後的結束日期
-                        if (currentDate.after(updatedEndDate)) {
-                            feedbackButton.visibility = View.VISIBLE
+                // 設定欄位寬度
+                sheet.setColumnWidth(0, 5000) // 時間欄寬度
+                sheet.setColumnWidth(1, 10000) // 行程名稱欄寬度
 
-                            feedbackButton.setOnClickListener {
-                                val scheduleId = document.id
-                                val intent = Intent(this, FeedbackActivity::class.java)
-                                intent.putExtra("SCHEDULE_ID", scheduleId)
-                                startActivity(intent)
-                            }
-                        }
+                // 其餘行是表頭和內容
+                for ((rowIndex, line) in lines.drop(1).withIndex()) {
+                    val excelRow = sheet.createRow(rowIndex)
+                    val cells = line.split(",")
+
+                    for ((cellIndex, cell) in cells.withIndex()) {
+                        excelRow.createCell(cellIndex).setCellValue(cell)
                     }
                 }
             }
-            .addOnFailureListener {
-                showToast("無法檢查回饋狀態")
+
+            // 匯出到下載目錄
+            exportScheduleToDownloads(workbook, scheduleName,csvContent)
+        } catch (e: Exception) {
+            showToast("CSV 轉 XLSX 失敗: ${e.message}")
+        } finally {
+            try {
+                workbook.close() // 確保工作簿正確關閉
+            } catch (e: Exception) {
+                showToast("關閉 Workbook 時發生錯誤: ${e.message}")
             }
+        }
     }
+
+    private fun exportScheduleToDownloads(workbook: XSSFWorkbook, scheduleName: String, csvContent: String) {
+        val xlsxFileName = "$scheduleName.xlsx"
+        val csvFileName = "$scheduleName.csv"
+
+        // 匯出 XLSX 檔案
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            val resolver = applicationContext.contentResolver
+
+            // 匯出 XLSX
+            val xlsxContentValues = ContentValues().apply {
+                put(MediaStore.Downloads.DISPLAY_NAME, xlsxFileName)
+                put(MediaStore.Downloads.MIME_TYPE, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+                put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
+            }
+
+            val xlsxUri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, xlsxContentValues)
+            xlsxUri?.let {
+                try {
+                    resolver.openOutputStream(it)?.use { outputStream ->
+                        workbook.write(outputStream)
+                    }
+                    showToast("XLSX 行程表已匯出到下載目錄: $xlsxFileName")
+                } catch (e: Exception) {
+                    showToast("匯出 XLSX 失敗: ${e.message}")
+                }
+            } ?: showToast("無法創建 XLSX 檔案 URI")
+
+            // 匯出 CSV
+            val csvContentValues = ContentValues().apply {
+                put(MediaStore.Downloads.DISPLAY_NAME, csvFileName)
+                put(MediaStore.Downloads.MIME_TYPE, "text/csv")
+                put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
+            }
+
+            val csvUri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, csvContentValues)
+            csvUri?.let {
+                try {
+                    resolver.openOutputStream(it)?.use { outputStream ->
+                        outputStream.write(csvContent.toByteArray(Charsets.UTF_8))
+                    }
+                    showToast("CSV 行程表已匯出到下載目錄: $csvFileName")
+                } catch (e: Exception) {
+                    showToast("匯出 CSV 失敗: ${e.message}")
+                }
+            } ?: showToast("無法創建 CSV 檔案 URI")
+        } else {
+            // Android 10 以下版本
+            val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+
+            // 匯出 XLSX
+            val xlsxFile = File(downloadsDir, xlsxFileName)
+            try {
+                FileOutputStream(xlsxFile).use { outputStream ->
+                    workbook.write(outputStream)
+                }
+                showToast("XLSX 行程表已匯出到下載目錄: $xlsxFileName")
+            } catch (e: Exception) {
+                showToast("匯出 XLSX 失敗: ${e.message}")
+            }
+
+            // 匯出 CSV
+            val csvFile = File(downloadsDir, csvFileName)
+            try {
+                FileOutputStream(csvFile).use { outputStream ->
+                    outputStream.write(csvContent.toByteArray(Charsets.UTF_8))
+                }
+                showToast("CSV 行程表已匯出到下載目錄: $csvFileName")
+            } catch (e: Exception) {
+                showToast("匯出 CSV 失敗: ${e.message}")
+            }
+        }
+
+        // 確保 Workbook 資源正確關閉
+        try {
+            workbook.close()
+        } catch (e: Exception) {
+            showToast("關閉 Workbook 時發生錯誤: ${e.message}")
+        }
+    }
+
+
+
+
+
 
     private fun addAccounting() {
         members = ArrayList()
