@@ -204,10 +204,13 @@ class PlanningActivity : AppCompatActivity() {
 
                             csvBuilder.append("\n") // 分隔不同日期
                         }
+                        fetchAccountingResults { accountingResults ->
+                            csvBuilder.append(accountingResults) // 附加分帳記錄
 
-                        // 匯出成 Excel 文件
-                        val csvContent = csvBuilder.toString()
-                        convertCsvToExcel(scheduleName, csvContent)
+                            // 確保分帳記錄添加後再生成 Excel
+                            val csvContent = csvBuilder.toString()
+                            convertCsvToExcel(scheduleName, csvContent)
+                        }
                     }
                     .addOnFailureListener { e ->
                         showToast("匯出行程失敗: ${e.message}")
@@ -218,7 +221,36 @@ class PlanningActivity : AppCompatActivity() {
             }
     }
 
+    // 查詢分帳結果
+    private fun fetchAccountingResults(onComplete: (String) -> Unit) {
+        val accountingRef = FirebaseFirestore.getInstance()
+            .collection("schedules").document(scheduleId).collection("accounting_results")
 
+        accountingRef.get()
+            .addOnSuccessListener { accountingDocuments ->
+                val csvBuilder = StringBuilder()
+
+                csvBuilder.append("分帳記錄\n")
+                csvBuilder.append("分帳項目名稱,支付方,欠款方,金額\n")
+
+                for (doc in accountingDocuments) {
+                    val title = doc.getString("title") ?: "未命名"
+                    val accounts = doc.get("results") as? List<Map<String, Any>> ?: emptyList()
+
+                    for (account in accounts) {
+                        csvBuilder.append(
+                            "${title},${account["creditor"] ?: "未知"},${account["debtor"] ?: "未知"},${account["amount"] ?: 0}\n"
+                        )
+                    }
+                }
+
+                onComplete(csvBuilder.toString())
+            }
+            .addOnFailureListener { e ->
+                showToast("讀取分帳記錄失敗: ${e.message}")
+                onComplete("") // 即使失敗也繼續匯出，分帳記錄為空
+            }
+    }
     private fun goToHomePage() {
         val intent = Intent(this, LobbyActivity::class.java)
         startActivity(intent)
