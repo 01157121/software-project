@@ -20,8 +20,8 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.firebase.firestore.FirebaseFirestore
 import androidx.appcompat.app.AlertDialog
 data class MediaItem(
-    val type: String,
-    val uri: String
+    val type: String,  // "image" 或 "video"
+    val uri: String    // URI 字符串
 )
 class FeedbackActivity : AppCompatActivity() {
     private val mediaList = mutableListOf<MediaItem>()// 儲存媒體的資料
@@ -141,6 +141,7 @@ class FeedbackActivity : AppCompatActivity() {
     // 添加媒體到 mediaList 並更新 RecyclerView
     private fun addMedia(type: String, uri: Uri) {
         val media =  MediaItem(type, uri.toString())
+
         mediaList.add(media)
         // 更新 RecyclerView，這裡需要創建一個 RecyclerView Adapter 顯示媒體預覽
         // 目前僅作為添加操作，根據需求可擴充 RecyclerView 以顯示圖片預覽

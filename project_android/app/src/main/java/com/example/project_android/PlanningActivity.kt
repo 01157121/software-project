@@ -567,7 +567,7 @@ class PlanningActivity : AppCompatActivity() {
             }
 
             // 添加長按事件
-            resultCard.setOnLongClickListener {
+            resultCard.setOnClickListener {
                 AlertDialog.Builder(this)
                     .setTitle("刪除分帳紀錄")
                     .setMessage("確定要刪除分帳紀錄 \"$title\" 嗎？")
