@@ -441,7 +441,7 @@ class PlanningActivity : AppCompatActivity() {
         val whoPaidList = dialogView.findViewById<ListView>(R.id.who_paid_list)
         whoPaidList.adapter = singleChoiceAdapter
         whoPaidList.choiceMode = ListView.CHOICE_MODE_SINGLE
-
+        setListViewHeightBasedOnChildren(whoPaidList)
         // 動態生成欠款者的選項
         val whoOwesContainer = dialogView.findViewById<LinearLayout>(R.id.who_owes_container)
         filteredMembers.forEach { member ->
@@ -513,6 +513,24 @@ class PlanningActivity : AppCompatActivity() {
 
         }
     }
+
+    private fun setListViewHeightBasedOnChildren(listView: ListView) {
+        val listAdapter = listView.adapter ?: return
+        var totalHeight = 0
+        for (i in 0 until listAdapter.count) {
+            val listItem = listAdapter.getView(i, null, listView)
+            listItem.measure(
+                View.MeasureSpec.makeMeasureSpec(listView.width, View.MeasureSpec.AT_MOST),
+                View.MeasureSpec.UNSPECIFIED
+            )
+            totalHeight += listItem.measuredHeight
+        }
+        val params = listView.layoutParams
+        params.height = totalHeight + listView.dividerHeight * (listAdapter.count - 1)
+        listView.layoutParams = params
+        listView.requestLayout()
+    }
+
     //把資料修改成firebase可儲存的格式
     private fun convertToMap(triple: Triple<String, String, Double>):Map<String, Any> {
         return mapOf(
