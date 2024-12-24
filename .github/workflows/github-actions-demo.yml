@@ -17,12 +17,12 @@ jobs:
       - name: Check out repository code
         uses: actions/checkout@v4
 
-      # 設置 Java 環境
+      # 設置 Java 17 環境
       - name: Setup JDK
         uses: actions/setup-java@v3
         with:
           distribution: 'zulu'
-          java-version: '11'
+          java-version: '17'
 
       # 確保 gradlew 有執行權限
       - name: Ensure gradlew is executable
