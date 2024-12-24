@@ -49,6 +49,9 @@ android {
         abortOnError = false // 禁止因 Lint 問題中止構建
         warningsAsErrors = false // 警告不視為錯誤
     }
+    lintOptions {
+        disable("OldTargetApi")
+    }
 }
 
 dependencies {
