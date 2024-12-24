@@ -24,6 +24,11 @@ jobs:
           distribution: 'zulu'
           java-version: '11'
 
+      # 確保 gradlew 有執行權限
+      - name: Ensure gradlew is executable
+        run: chmod +x gradlew
+        working-directory: project_android
+
       # 緩存 Gradle 依賴
       - name: Cache Gradle dependencies
         uses: actions/cache@v3
@@ -52,8 +57,8 @@ jobs:
       - name: List build outputs
         run: |
           ls app/build/outputs
+        working-directory: project_android
 
       # 顯示工作流狀態
       - name: Display job status
         run: echo "🍏 This job's status is ${{ job.status }}."
-
