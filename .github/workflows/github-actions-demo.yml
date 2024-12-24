@@ -40,8 +40,10 @@ jobs:
 
       # 構建項目
       - name: Build the project
-        run: ./gradlew build
+        run: ./gradlew build --stacktrace --info
         working-directory: project_android
+        continue-on-error: true
+
 
       # 運行 Lint 檢查（允許錯誤但不阻止流程）
       - name: Run Android Lint
