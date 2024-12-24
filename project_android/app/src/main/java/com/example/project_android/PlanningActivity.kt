@@ -15,6 +15,7 @@ import android.view.Gravity
 import android.view.View
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.viewpager2.widget.ViewPager2
 import com.google.android.gms.tasks.Task
@@ -65,7 +66,7 @@ class PlanningActivity : AppCompatActivity() {
         // 設定選單圖示的點擊事件
         val menuIcon: ImageView = findViewById(R.id.menu_icon)
         menuIcon.setOnClickListener {
-            drawerLayout.openDrawer(Gravity.START)
+            drawerLayout.openDrawer(GravityCompat.START)
         }
 
         // 导航菜单点击事件
@@ -102,7 +103,7 @@ class PlanningActivity : AppCompatActivity() {
 
     private fun setupNavigationMenu() {
         findViewById<ImageView>(R.id.menu_icon).setOnClickListener {
-            drawerLayout.openDrawer(Gravity.START)
+            drawerLayout.openDrawer(GravityCompat.START)
         }
 
         navigationView.setNavigationItemSelectedListener { menuItem ->
@@ -113,7 +114,7 @@ class PlanningActivity : AppCompatActivity() {
                 R.id.nav_export -> showExportDialog()
                 R.id.nav_home -> goToHomePage()
             }
-            drawerLayout.closeDrawer(Gravity.START)
+            drawerLayout.closeDrawer(GravityCompat.START)
             true
         }
     }

@@ -44,7 +44,6 @@ android {
 }
 
 dependencies {
-
     implementation(platform("com.google.firebase:firebase-bom:33.7.0"))
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)

@@ -201,36 +201,6 @@ class FeedbackActivity : AppCompatActivity() {
 //        showToast("$type 功能未實現")
 //    }
 
-    private fun submitFeedback() {
-        val scheduleId = intent.getStringExtra("SCHEDULE_ID") ?: return
-        val feedbackText = feedbackEditText.text.toString()
-
-        if (feedbackText.isBlank()) {
-            showToast("請輸入回饋內容")
-            return
-        }
-
-        val feedbackId = generateUniqueFeedbackId()
-        val feedbackData = hashMapOf(
-            "feedbackId" to feedbackId,
-            "text" to feedbackText,
-            "timestamp" to System.currentTimeMillis()
-        )
-
-        db.collection("schedules")
-            .document(scheduleId)
-            .collection("feedback")
-            .document(feedbackId)
-            .set(feedbackData)
-            .addOnSuccessListener {
-                showToast("回饋已提交！")
-                finish()
-            }
-            .addOnFailureListener {
-                showToast("提交失敗：${it.message}")
-            }
-    }
-
     private fun showFeedbackDialog(feedbackList: List<Map<String, Any>>) {
         // 如果舊對話框存在，先關閉
         feedbackDialog?.dismiss()
