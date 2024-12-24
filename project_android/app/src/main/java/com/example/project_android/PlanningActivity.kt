@@ -196,6 +196,7 @@ class PlanningActivity : AppCompatActivity() {
                             // 填入行程資料
                             for (plan in plans) {
                                 val timeRange = String.format(
+                                    Locale.getDefault(),
                                     "%02d:%02d - %02d:%02d",
                                     plan["startHour"], plan["startMinute"],
                                     plan["endHour"], plan["endMinute"]
