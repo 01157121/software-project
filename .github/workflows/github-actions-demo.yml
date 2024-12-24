@@ -1,18 +1,56 @@
-name: GitHub Actions Demo
-run-name: ${{ github.actor }} is testing out GitHub Actions 🚀
-on: [push]
+name: Android CI Demo
+run-name: ${{ github.actor }} is testing Android CI 🚀
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
 jobs:
-  Explore-GitHub-Actions:
+  Build-and-Test:
     runs-on: ubuntu-latest
     steps:
-      - run: echo "🎉 The job was automatically triggered by a ${{ github.event_name }} event."
-      - run: echo "🐧 This job is now running on a ${{ runner.os }} server hosted by GitHub!"
-      - run: echo "🔎 The name of your branch is ${{ github.ref }} and your repository is ${{ github.repository }}."
+      # 檢出代碼
       - name: Check out repository code
         uses: actions/checkout@v4
-      - run: echo "💡 The ${{ github.repository }} repository has been cloned to the runner."
-      - run: echo "🖥️ The workflow is now ready to test your code on the runner."
-      - name: List files in the repository
+
+      # 設置 Java 環境
+      - name: Setup JDK
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'zulu'
+          java-version: '11'
+
+      # 緩存 Gradle 依賴
+      - name: Cache Gradle dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.gradle/caches
+          key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            gradle-${{ runner.os }}
+
+      # 構建項目
+      - name: Build the project
+        run: ./gradlew build
+
+      # 運行單元測試
+      - name: Run Unit Tests
+        run: ./gradlew testDebugUnitTest
+
+      # 運行 Lint 檢查
+      - name: Run Android Lint
+        run: ./gradlew lint
+
+      # 列出生成的構建目錄
+      - name: List build outputs
         run: |
-          ls ${{ github.workspace }}
-      - run: echo "🍏 This job's status is ${{ job.status }}."
+          ls app/build/outputs
+
+      # 顯示工作流狀態
+      - name: Display job status
+        run: echo "🍏 This job's status is ${{ job.status }}."
+
