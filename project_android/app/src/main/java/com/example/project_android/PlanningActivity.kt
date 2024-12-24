@@ -432,6 +432,7 @@ class PlanningActivity : AppCompatActivity() {
         dialog.show()
 
     }
+    @Suppress("InflateParams")
     private fun setupAccountingDialog(dialog: AlertDialog, dialogView: View) {
 
         val filteredMembers = members?.filter { it.isNotBlank() } ?: arrayListOf()
@@ -446,7 +447,7 @@ class PlanningActivity : AppCompatActivity() {
         setListViewHeightBasedOnChildren(whoPaidList)
         // 動態生成欠款者的選項
         val whoOwesContainer = dialogView.findViewById<LinearLayout>(R.id.who_owes_container)
-        filteredMembers.forEach { member ->
+        filteredMembers.forEach { member ->            
             val itemView = layoutInflater.inflate(R.layout.item_who_owes, null)
 
             val checkBox = itemView.findViewById<CheckBox>(R.id.checkbox_who_owes)
