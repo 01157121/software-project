@@ -129,7 +129,7 @@ class DatePageAdapter(
             showTimePickerDialog { hour, minute ->
                 startHour = hour;
                 startMinute = minute;
-                startTimeButton.text = String.format("%02d:%02d", hour, minute);
+                startTimeButton.text = String.format(Locale.getDefault(),"%02d:%02d", hour, minute);
             };
         };
 
