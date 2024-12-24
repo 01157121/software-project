@@ -1,0 +1,59 @@
+name: Android CI Demo
+run-name: ${{ github.actor }} is testing Android CI 🚀
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  Build-and-Test:
+    runs-on: ubuntu-latest
+    steps:
+      # 檢出代碼
+      - name: Check out repository code
+        uses: actions/checkout@v4
+
+      # 設置 Java 17 環境
+      - name: Setup JDK
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      # 確保 gradlew 有執行權限
+      - name: Ensure gradlew is executable
+        run: chmod +x gradlew
+        working-directory: project_android
+
+      # 緩存 Gradle 依賴
+      - name: Cache Gradle dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.gradle/caches
+          key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            gradle-${{ runner.os }}
+
+      # 構建項目
+      - name: Build the project
+        run: ./gradlew build --stacktrace
+        working-directory: project_android
+
+      # 運行 Lint 檢查（不阻止構建）
+      - name: Run Android Lint
+        run: ./gradlew lintDebug -Pandroid.lint.abortOnError=false
+        working-directory: project_android
+
+      # 列出生成的構建目錄
+      - name: List build outputs
+        run: |
+          ls app/build/outputs
+        working-directory: project_android
+
+      # 顯示工作流狀態
+      - name: Display job status
+        run: echo "🍏 This job's status is ${{ job.status }}."
