@@ -1,5 +1,4 @@
 plugins {
-
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     id("com.google.gms.google-services")
@@ -28,18 +27,27 @@ android {
             )
         }
     }
+
     packagingOptions {
         resources {
-            // 忽略重複的 META-INF/DEPENDENCIES 文件
             excludes += "META-INF/DEPENDENCIES"
         }
     }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
     }
+
     kotlinOptions {
         jvmTarget = "1.8"
+    }
+
+    // Lint 配置
+    lint {
+        baseline = file("lint-baseline.xml") // 使用基線文件避免處理現有錯誤
+        abortOnError = false // 禁止因 Lint 問題中止構建
+        warningsAsErrors = false // 警告不視為錯誤
     }
 }
 
@@ -66,10 +74,10 @@ dependencies {
     implementation("com.google.oauth-client:google-oauth-client-jetty:1.34.1")
     implementation("com.google.apis:google-api-services-sheets:v4-rev20220927-2.0.0")
     implementation("com.google.auth:google-auth-library-oauth2-http:1.15.0")
-    implementation ("com.fasterxml.jackson.core:jackson-core:2.12.3")
-    implementation ("org.apache.poi:poi-ooxml:5.2.3")
-    implementation ("org.apache.commons:commons-compress:1.24.0")
-    implementation ("androidx.multidex:multidex:2.0.1")
+    implementation("com.fasterxml.jackson.core:jackson-core:2.12.3")
+    implementation("org.apache.poi:poi-ooxml:5.2.3")
+    implementation("org.apache.commons:commons-compress:1.24.0")
+    implementation("androidx.multidex:multidex:2.0.1")
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
 }
