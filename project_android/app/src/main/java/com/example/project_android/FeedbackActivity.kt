@@ -95,10 +95,11 @@ class FeedbackActivity : AppCompatActivity() {
     }
 
     private fun openImagePicker() {
-        val intent = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
-        intent.type = "image/*"
+        val intent = Intent(Intent.ACTION_PICK)
+        intent.setDataAndType(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, "image/*")
         startActivityForResult(intent, PICK_IMAGE_REQUEST)
     }
+
 
     private fun submitFeedback(scheduleId:String) {
         val feedbackText = feedbackEditText.text.toString()
