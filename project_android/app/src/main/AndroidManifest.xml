@@ -28,9 +28,7 @@
         <activity android:name=".RegisterActivity"></activity>
         <activity android:name=".UserListActivity"></activity>
         <activity android:name=".FeedbackActivity"></activity>
-        <activity
-            android:name=".LobbyActivity" />
-        </activity>
+        <activity android:name=".LobbyActivity"></activity>
     </application>
 
 </manifest>
