@@ -1,18 +1,18 @@
-名稱：GitHub Actions 示範
-運行名稱：${{ github.actor }} 正在測試 GitHub Actions 🚀 
-：[push] 
-jobs：
-  Explore-GitHub-Actions：
-    runs-on：ubuntu-latest
-    步驟：
-      - run：echo " 🎉 該作業由${{ github.event_name }} 事件自動觸發。
-      - run: echo "🐧 此作業現在正在 GitHub 託管的 ${{ runner.os }} 伺服器上執行！" 
-      - run: echo "🔎 您的分支名稱是 ${{ github.ref }}，您的儲存庫是 ${{ github.repository }}。" 
-      - 名稱：簽出儲存庫程式碼
-        使用：actions/checkout@v4 
-      - 執行：echo "💡 ${{ github.repository }} 儲存庫已複製到執行器。" 
-      - run: echo "🖥️ 工作流程現在已準備好在運行器上測試您的程式碼。" 
-      - 名稱：列出儲存庫中的檔案
-        運行： | 
-          ls ${{ github.workspace }} 
-      - 運行： echo "🍏 此作業的狀態是 ${{ job.status }}。"
+name: GitHub Actions Demo
+run-name: ${{ github.actor }} is testing out GitHub Actions 🚀
+on: [push]
+jobs:
+  Explore-GitHub-Actions:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "🎉 The job was automatically triggered by a ${{ github.event_name }} event."
+      - run: echo "🐧 This job is now running on a ${{ runner.os }} server hosted by GitHub!"
+      - run: echo "🔎 The name of your branch is ${{ github.ref }} and your repository is ${{ github.repository }}."
+      - name: Check out repository code
+        uses: actions/checkout@v4
+      - run: echo "💡 The ${{ github.repository }} repository has been cloned to the runner."
+      - run: echo "🖥️ The workflow is now ready to test your code on the runner."
+      - name: List files in the repository
+        run: |
+          ls ${{ github.workspace }}
+      - run: echo "🍏 This job's status is ${{ job.status }}."
