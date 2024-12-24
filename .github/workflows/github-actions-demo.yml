@@ -43,9 +43,9 @@ jobs:
         run: ./gradlew build
         working-directory: project_android
 
-      # 運行 Lint 檢查
+      # 運行 Lint 檢查（允許錯誤但不阻止流程）
       - name: Run Android Lint
-        run: ./gradlew lintDebug || true
+        run: ./gradlew lintDebug -Pandroid.lint.abortOnError=false
         working-directory: project_android
 
       # 列出生成的構建目錄
