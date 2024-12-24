@@ -11,6 +11,7 @@ import com.example.project_android.R;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.firebase.firestore.FirebaseFirestore;
 import java.text.SimpleDateFormat;
+import java.util.Locale;
 import java.util.*;
 
 class DatePageAdapter(
@@ -136,7 +137,7 @@ class DatePageAdapter(
             showTimePickerDialog { hour, minute ->
                 endHour = hour;
                 endMinute = minute;
-                endTimeButton.text = String.format("%02d:%02d", hour, minute);
+                endTimeButton.text = String.format(Locale.getDefault(),"%02d:%02d", hour, minute);
             };
         };
 
