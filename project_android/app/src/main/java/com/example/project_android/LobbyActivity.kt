@@ -29,6 +29,8 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.auth.FirebaseAuth
 import com.bumptech.glide.Glide
 import com.google.firebase.firestore.FieldPath
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 
 class LobbyActivity : AppCompatActivity() {
@@ -334,6 +336,20 @@ class LobbyActivity : AppCompatActivity() {
 
                     showToast("請填寫完整信息")
                     return@setPositiveButton
+                }
+                val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()) // 根據你的日期格式進行調整
+                try {
+                    val startDate1 = dateFormat.parse(startDate)
+                    val endDate1 = dateFormat.parse(endDate)
+
+                    // 檢查結束日期是否早於開始日期
+                    if (endDate1 != null && startDate1 != null && endDate1.before(startDate1)) {
+                        showToast("結束日期不能早於開始日期")
+                        return@setPositiveButton
+                    }
+
+                } catch (e: Exception) {
+                    showToast("日期格式錯誤")
                 }
 
                 // 生成行程表 ID
