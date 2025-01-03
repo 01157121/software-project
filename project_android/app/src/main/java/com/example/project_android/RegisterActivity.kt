@@ -28,18 +28,22 @@ class RegisterActivity : AppCompatActivity() {
         val usernameInput = findViewById<EditText>(R.id.username_input)
         val emailInput = findViewById<EditText>(R.id.email_input)
         val passwordInput = findViewById<EditText>(R.id.password_input)
+        val confirmPasswordInput = findViewById<EditText>(R.id.confirm_password_input)
         val registerButton = findViewById<Button>(R.id.register_button)
 
         registerButton.setOnClickListener {
             val username = usernameInput.text.toString().trim()
             val email = emailInput.text.toString().trim()
             val password = passwordInput.text.toString().trim()
-
-            if (username.isEmpty() || email.isEmpty() || password.isEmpty()) {
-                Toast.makeText(this, "Please fill in all fields", Toast.LENGTH_SHORT).show()
+            val confirmPassword = confirmPasswordInput.text.toString().trim()
+            if (username.isEmpty() || email.isEmpty() || password.isEmpty() || confirmPassword.isEmpty()) {
+                Toast.makeText(this, "請填寫所有欄位", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
-
+            if (password != confirmPassword) {
+                Toast.makeText(this, "密碼不一致，請重新輸入", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
             registerUser(username, email, password)
         }
         val cancelButton = findViewById<Button>(R.id.cancel_button)
@@ -53,20 +57,38 @@ class RegisterActivity : AppCompatActivity() {
         auth.createUserWithEmailAndPassword(email, password)
             .addOnCompleteListener(this) { task ->
                 if (task.isSuccessful) {
-                    val userId = auth.currentUser?.uid ?: return@addOnCompleteListener
-                    saveUserToDatabase(userId, username, email)
-                    Toast.makeText(this, "Registration successful!", Toast.LENGTH_SHORT).show()
-
+                    val user = auth.currentUser
+                    user?.sendEmailVerification()
+                        ?.addOnCompleteListener { emailTask ->
+                            if (emailTask.isSuccessful) {
+                                val userId = user.uid
+                                saveUserToDatabase(userId, username, email)
+                                Toast.makeText(
+                                    this,
+                                    "註冊成功！驗證郵件已發送，請檢查您的信箱。",
+                                    Toast.LENGTH_LONG
+                                ).show()
+                            } else {
+                                Log.e("RegisterActivity", "Email verification failed: ${emailTask.exception}")
+                                Toast.makeText(
+                                    this,
+                                    "無法發送驗證郵件: ${emailTask.exception?.message}",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                        }
                 } else {
                     Log.e("RegisterActivity", "Registration failed: ${task.exception}")
                     Toast.makeText(
                         this,
-                        "Registration failed: ${task.exception?.message}",
+                        "註冊失敗: ${task.exception?.message}",
                         Toast.LENGTH_SHORT
                     ).show()
                 }
             }
     }
+
+
 
     private fun saveUserToDatabase(userId: String, username: String, email: String) {
         val userData = hashMapOf(

@@ -14,6 +14,7 @@ import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.api.ApiException
 import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.firestore
@@ -39,16 +40,29 @@ class LoginActivity : AppCompatActivity() {
         val users = mutableMapOf<String, String>()
 
         loginButton.setOnClickListener {
-            val email = emailEditText.text.toString()
-            val password = passwordEditText.text.toString()
+            val email = emailEditText.text.toString().trim()
+            val password = passwordEditText.text.toString().trim()
 
             if (email.isNotEmpty() && password.isNotEmpty()) {
                 auth.signInWithEmailAndPassword(email, password)
                     .addOnCompleteListener { task ->
                         if (task.isSuccessful) {
-                            Toast.makeText(this, "登入成功", Toast.LENGTH_SHORT).show()
-                            val intent = Intent(this, LobbyActivity::class.java)
-                            startActivity(intent)
+                            val user = auth.currentUser
+                            if (user != null && !user.isEmailVerified) {
+                                // 提示用戶驗證電子郵件
+                                Toast.makeText(this, "您的信箱尚未驗證，請檢查郵件並完成驗證。", Toast.LENGTH_SHORT).show()
+
+                                // 提供重新發送驗證郵件的選項
+                                resendVerificationEmail(user)
+
+                                // 登出未驗證的用戶
+                                auth.signOut()
+                            } else {
+                                Toast.makeText(this, "登入成功", Toast.LENGTH_SHORT).show()
+                                val intent = Intent(this, LobbyActivity::class.java)
+                                startActivity(intent)
+                                finish() // 關閉當前活動
+                            }
                         } else {
                             Toast.makeText(this, "登入失敗: ${task.exception?.message}", Toast.LENGTH_SHORT).show()
                         }
@@ -57,6 +71,9 @@ class LoginActivity : AppCompatActivity() {
                 Toast.makeText(this, "請填寫空格", Toast.LENGTH_SHORT).show()
             }
         }
+
+
+
         registerButton.setOnClickListener {
             // Navigate to RegisterActivity
             val intent = Intent(this, RegisterActivity::class.java)
@@ -75,7 +92,17 @@ class LoginActivity : AppCompatActivity() {
             signInWithGoogle()
         }
     }
-
+    // 提供重新發送驗證郵件的功能
+    private fun resendVerificationEmail(user: FirebaseUser) {
+        user.sendEmailVerification()
+            .addOnCompleteListener { task ->
+                if (task.isSuccessful) {
+                    Toast.makeText(this, "驗證郵件已重新發送，請檢查您的信箱。", Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(this, "無法發送驗證郵件: ${task.exception?.message}", Toast.LENGTH_SHORT).show()
+                }
+            }
+    }
     private fun signInWithGoogle() {
         val signInIntent = googleSignInClient.signInIntent
         startActivityForResult(signInIntent, RC_SIGN_IN)

@@ -1,4 +1,5 @@
 name: Android CI Demo
+
 run-name: ${{ github.actor }} is testing Android CI 🚀
 
 on:
@@ -12,6 +13,7 @@ on:
 jobs:
   Build-and-Test:
     runs-on: ubuntu-latest
+
     steps:
       # 檢出代碼
       - name: Check out repository code
@@ -40,12 +42,12 @@ jobs:
 
       # 構建項目
       - name: Build the project
-        run: ./gradlew build --stacktrace
+        run: ./gradlew build -Dlint.baselines.continue=true --warning-mode=all
         working-directory: project_android
 
       # 運行 Lint 檢查（不阻止構建）
       - name: Run Android Lint
-        run: ./gradlew lintDebug -Pandroid.lint.abortOnError=false -Dlint.baselines.continue=true
+        run: ./gradlew lintDebug -Pandroid.lint.abortOnError=false -Dlint.baselines.continue=true --warning-mode=all
         working-directory: project_android
 
       # 列出生成的構建目錄
