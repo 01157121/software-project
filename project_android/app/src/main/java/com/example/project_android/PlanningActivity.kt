@@ -11,6 +11,8 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Environment
 import android.provider.MediaStore
+import android.text.Editable
+import android.text.TextWatcher
 import android.view.Gravity
 import android.view.View
 import android.widget.*
@@ -451,9 +453,42 @@ class PlanningActivity : AppCompatActivity() {
             val itemView = layoutInflater.inflate(R.layout.item_who_owes, null)
 
             val checkBox = itemView.findViewById<CheckBox>(R.id.checkbox_who_owes)
-            itemView.findViewById<EditText>(R.id.amount_input)
+            val seekBarAmount =itemView.findViewById<SeekBar>(R.id.seekbar_amount)
+            val amountInput = itemView.findViewById<EditText>(R.id.amount_input)
+            val amountPaidInput = dialogView.findViewById<EditText>(R.id.amount_paid_input)
 
             checkBox.text = member
+            amountPaidInput.addTextChangedListener(object : TextWatcher {
+                override fun afterTextChanged(s: Editable?) {
+                    val value = s.toString().toIntOrNull() ?: 0
+                    seekBarAmount.max = value
+                }
+
+                override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+                override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            })
+            seekBarAmount.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+                override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+                    if (fromUser) {
+                        amountInput.setText(progress.toString())
+                    }
+                }
+
+                override fun onStartTrackingTouch(seekBar: SeekBar?) {}
+                override fun onStopTrackingTouch(seekBar: SeekBar?) {}
+            })
+
+            amountInput.addTextChangedListener(object : TextWatcher {
+                override fun afterTextChanged(s: Editable?) {
+                    val value = s.toString().toIntOrNull() ?: 0
+                    if (value in 0..seekBarAmount.max) {
+                        seekBarAmount.progress = value
+                    }
+                }
+
+                override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+                override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            })
             whoOwesContainer.addView(itemView)
         }
 
@@ -478,6 +513,7 @@ class PlanningActivity : AppCompatActivity() {
                 val itemView = whoOwesContainer.getChildAt(i)
                 val checkBox = itemView.findViewById<CheckBox>(R.id.checkbox_who_owes)
                 val amountInput = itemView.findViewById<EditText>(R.id.amount_input)
+                val seekBarAmount = itemView.findViewById<SeekBar>(R.id.seekbar_amount)
 
                 if (checkBox.isChecked) {
                     val amount = amountInput.text.toString().toDoubleOrNull()
