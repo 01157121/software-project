@@ -337,7 +337,7 @@ class LobbyActivity : AppCompatActivity() {
                     showToast("請填寫完整信息")
                     return@setPositiveButton
                 }
-                val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()) // 根據你的日期格式進行調整
+                val dateFormat = SimpleDateFormat("yyyy/MM/dd", Locale.getDefault()) // 根據你的日期格式進行調整
                 try {
                     val startDate1 = dateFormat.parse(startDate)
                     val endDate1 = dateFormat.parse(endDate)
