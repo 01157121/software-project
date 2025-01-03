@@ -112,6 +112,36 @@ class LoginActivity : AppCompatActivity() {
                 }
             }
     }
+
+//    private fun firebaseAuthWithGoogle(account: GoogleSignInAccount?) {
+//        if (account == null) {
+//            Toast.makeText(this, "Google account is null", Toast.LENGTH_SHORT).show()
+//            return
+//        }
+//
+//        val credential = GoogleAuthProvider.getCredential(account.idToken, null)
+//        auth.signInWithCredential(credential)
+//            .addOnCompleteListener(this) { task ->
+//                if (task.isSuccessful) {
+//                    val user = auth.currentUser
+//                    user?.let {
+//                        saveUserToDatabase(it.uid, it.displayName ?: "Unknown", it.email ?: "No Email")
+//                        val intent = Intent(this, LobbyActivity::class.java).apply {
+//                            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+//                        }
+//                        startActivity(intent)
+//                        finish()
+//                    } ?: run {
+//                        Toast.makeText(this, "User is null after authentication", Toast.LENGTH_SHORT).show()
+//                    }
+//                } else {
+//                    Log.w("GoogleSignIn", "Firebase authentication failed: ${task.exception?.message}", task.exception)
+//                    Toast.makeText(this, "Authentication failed.", Toast.LENGTH_SHORT).show()
+//                }
+//            }
+//    }
+
+
     private fun saveUserToDatabase(userId: String, username: String, email: String) {
         val userData = hashMapOf(
             "username" to username,

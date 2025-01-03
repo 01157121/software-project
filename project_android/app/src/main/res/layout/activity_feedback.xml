@@ -162,6 +162,7 @@
             android:layout_height="wrap_content"
             android:src="@drawable/ic_menu"
             android:contentDescription="確認送出"
+            android:layout_margin="10dp"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintBottom_toBottomOf="parent" />
@@ -173,6 +174,7 @@
             android:layout_height="wrap_content"
             android:src="@drawable/ic_check"
             android:contentDescription="查看回饋"
+            android:layout_margin="10dp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintBottom_toBottomOf="parent" />
