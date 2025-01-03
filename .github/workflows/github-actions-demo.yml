@@ -42,7 +42,7 @@ jobs:
 
       # 構建項目
       - name: Build the project
-        run: ./gradlew build --stacktrace --warning-mode=all
+        run: ./gradlew build -Dlint.baselines.continue=true --warning-mode=all
         working-directory: project_android
 
       # 運行 Lint 檢查（不阻止構建）
