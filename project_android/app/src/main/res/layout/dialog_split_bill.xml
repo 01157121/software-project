@@ -46,7 +46,7 @@
             android:text="選擇付款者"
             android:paddingBottom="8dp" />
 
-        <androidx.recyclerview.widget.RecyclerView
+        <ListView
             android:id="@+id/who_paid_list"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

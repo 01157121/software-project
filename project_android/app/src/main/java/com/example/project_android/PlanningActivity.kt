@@ -411,6 +411,7 @@ class PlanningActivity : AppCompatActivity() {
                     val tasks = collaborators.map { userId ->
                         db.collection("users").document(userId).get()
                     }
+                    print(tasks)
 
                     Tasks.whenAllSuccess<DocumentSnapshot>(tasks).addOnSuccessListener { documents ->
                         documents.forEach { userDocument ->
