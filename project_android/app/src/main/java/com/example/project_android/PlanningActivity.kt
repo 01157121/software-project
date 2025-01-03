@@ -242,9 +242,12 @@ class PlanningActivity : AppCompatActivity() {
                     val accounts = doc.get("results") as? List<Map<String, Any>> ?: emptyList()
 
                     for (account in accounts) {
-                        csvBuilder.append(
-                            "${title},${account["creditor"] ?: "未知"},${account["debtor"] ?: "未知"},${account["amount"] ?: 0}\n"
-                        )
+                        if(account["creditor"] == account["debtor"]) continue
+                        else {
+                            csvBuilder.append(
+                                "${title},${account["creditor"] ?: "未知"},${account["debtor"] ?: "未知"},${account["amount"] ?: 0}\n"
+                            )
+                        }
                     }
                 }
 
